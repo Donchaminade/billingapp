@@ -10,6 +10,9 @@ import '../../features/billing/presentation/pages/checkout_page.dart';
 import '../../features/product/domain/entities/product.dart';
 
 import '../../features/billing/presentation/pages/history_page.dart';
+import '../../features/billing/presentation/pages/manual_sale_page.dart';
+import '../../features/product/presentation/pages/stock_movement_page.dart';
+import '../../features/product/presentation/pages/reports_page.dart';
 import '../../core/widgets/main_navigation_wrapper.dart';
 import 'package:flutter/material.dart';
 
@@ -81,6 +84,21 @@ final router = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/settings',
       builder: (context, state) => const SettingsPage(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/manual-sale',
+      builder: (context, state) => const ManualSalePage(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/stock-movement',
+      builder: (context, state) => const StockMovementPage(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/reports',
+      builder: (context, state) => const ReportsPage(),
     ),
   ],
 );

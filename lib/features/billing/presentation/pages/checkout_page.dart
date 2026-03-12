@@ -5,11 +5,16 @@ import 'package:go_router/go_router.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../shop/presentation/bloc/shop_bloc.dart';
-import '../bloc/billing_bloc.dart';
-import '../bloc/history_bloc.dart';
+import 'package:billing_app/features/shop/presentation/bloc/shop_bloc.dart';
+import 'package:billing_app/features/billing/presentation/bloc/billing_bloc.dart';
+import 'package:billing_app/features/billing/presentation/bloc/history_bloc.dart';
 import 'package:billing_app/features/billing/domain/entities/sale.dart';
+import 'package:billing_app/features/product/domain/entities/product.dart';
+import 'package:billing_app/features/product/presentation/bloc/product_bloc.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/printer_helper.dart';
+import '../../../../core/utils/pdf_helper.dart';
+import '../../../../core/utils/whatsapp_helper.dart';
 import 'package:uuid/uuid.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -20,6 +25,8 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
+  bool _isSaleSaved = false;
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -37,10 +44,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () => _handleBack(context),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.share_rounded),
+              onPressed: () => _showWhatsappDialog(context),
+              tooltip: 'Partager via WhatsApp',
+            ),
+          ],
         ),
         body: BlocConsumer<BillingBloc, BillingState>(
           listener: (context, state) {
             if (state.printSuccess) {
+              if (!_isSaleSaved) {
+                 _saveToHistory(context, state);
+              }
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Reçu imprimé avec succès !'),
@@ -205,6 +222,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildBottomBar(BuildContext context, BillingState billingState, ShopState shopState) {
+    String currency = 'FCFA';
+    if (shopState is ShopLoaded) {
+      currency = shopState.shop.currency;
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -219,15 +241,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
             PrimaryButton(
               onPressed: () {
                 if (shopState is ShopLoaded) {
-                  context.read<BillingBloc>().add(
-                    PrintReceiptEvent(
-                      shopName: shopState.shop.name,
-                      address1: shopState.shop.addressLine1,
-                      address2: shopState.shop.addressLine2,
-                      phone: shopState.shop.phoneNumber,
-                      footer: shopState.shop.footerText,
-                    ),
-                  );
+                  final printer = PrinterHelper();
+                  if (!printer.isConnected) {
+                    _showNoPrinterDialog(context, shopState.shop, billingState, currency);
+                  } else {
+                    context.read<BillingBloc>().add(
+                      PrintReceiptEvent(
+                        shopName: shopState.shop.name,
+                        address1: shopState.shop.addressLine1,
+                        address2: shopState.shop.addressLine2,
+                        phone: shopState.shop.phoneNumber,
+                        footer: shopState.shop.footerText,
+                      ),
+                    );
+                  }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Détails de la boutique non chargés'), backgroundColor: Colors.red),
@@ -257,7 +284,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   void _saveToHistory(BuildContext context, BillingState state) {
-    if (state.cartItems.isEmpty) return;
+    if (state.cartItems.isEmpty || _isSaleSaved) return;
 
     final sale = Sale(
       id: Uuid().v4(),
@@ -272,6 +299,157 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
 
     context.read<HistoryBloc>().add(AddSaleToHistoryEvent(sale));
+
+    // Décrémenter les stocks
+    for (var item in state.cartItems) {
+      final product = item.product;
+      final updatedProduct = Product(
+        id: product.id,
+        name: product.name,
+        barcode: product.barcode,
+        price: product.price,
+        stock: product.stock - item.quantity,
+      );
+      context.read<ProductBloc>().add(UpdateProduct(updatedProduct));
+    }
+
+    setState(() {
+      _isSaleSaved = true;
+    });
+  }
+
+  void _showNoPrinterDialog(BuildContext context, dynamic shop, BillingState state, String currency) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            const Icon(Icons.print_disabled_rounded, color: Colors.orange),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Imprimante non détectée')),
+          ],
+        ),
+        content: const Text(
+          'Voulez-vous générer une facture PDF et l\'envoyer par WhatsApp à votre client ?',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showWhatsappDialog(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Envoyer WhatsApp'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWhatsappDialog(BuildContext context) {
+    final phoneController = TextEditingController();
+    final shopState = context.read<ShopBloc>().state;
+    final billingState = context.read<BillingBloc>().state;
+    
+    if (shopState is! ShopLoaded) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Envoi WhatsApp', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Entrez le numéro WhatsApp du client pour envoyer le reçu PDF.', 
+                style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  hintText: 'Ex: 22890000000',
+                  prefixIcon: const Icon(Icons.phone_iphone_rounded, color: Colors.green),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+          ElevatedButton(
+            onPressed: () async {
+              final phone = phoneController.text.trim();
+              if (phone.isEmpty) return;
+              
+              Navigator.pop(ctx);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Génération du reçu PDF...'), duration: Duration(seconds: 1)),
+              );
+
+              try {
+                String currency = shopState.shop.currency;
+
+                final items = billingState.cartItems.map((item) => {
+                  'name': item.product.name,
+                  'qty': item.quantity,
+                  'price': item.product.price,
+                  'total': item.total,
+                }).toList();
+
+                final file = await PdfHelper.generateReceipt(
+                  shopName: shopState.shop.name,
+                  address1: shopState.shop.addressLine1,
+                  address2: shopState.shop.addressLine2,
+                  phone: shopState.shop.phoneNumber,
+                  items: items,
+                  total: billingState.totalAmount,
+                  currency: currency,
+                  footer: shopState.shop.footerText,
+                );
+
+                await WhatsappHelper.sendReceipt(
+                  pdfFile: file,
+                  phoneNumber: phone,
+                  shopName: shopState.shop.name,
+                );
+
+                if (!_isSaleSaved) {
+                  _saveToHistory(context, billingState);
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Envoyer le PDF'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _headerCell(String text) {

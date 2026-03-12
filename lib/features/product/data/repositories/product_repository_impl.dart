@@ -45,6 +45,22 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
+  Future<Either<Failure, void>> addProducts(List<Product> products) async {
+    try {
+      final box = HiveDatabase.productBox;
+      final map = <String, ProductModel>{};
+      for (var p in products) {
+        final model = ProductModel.fromEntity(p);
+        map[model.id] = model;
+      }
+      await box.putAll(map);
+      return const Right(null);
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> updateProduct(Product product) async {
     try {
       final box = HiveDatabase.productBox;

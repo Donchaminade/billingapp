@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/usecases/product_usecases.dart';
+import '../../domain/usecases/add_products_use_case.dart';
 import '../../../../core/usecase/usecase.dart';
 
 part 'product_event.dart';
@@ -10,17 +11,20 @@ part 'product_state.dart';
 class ProductBloc extends Bloc<ProductEvent, ProductState> {
   final GetProductsUseCase getProductsUseCase;
   final AddProductUseCase addProductUseCase;
+  final AddProductsUseCase addProductsUseCase;
   final UpdateProductUseCase updateProductUseCase;
   final DeleteProductUseCase deleteProductUseCase;
 
   ProductBloc({
     required this.getProductsUseCase,
     required this.addProductUseCase,
+    required this.addProductsUseCase,
     required this.updateProductUseCase,
     required this.deleteProductUseCase,
   }) : super(const ProductState()) {
     on<LoadProducts>(_onLoadProducts);
     on<AddProduct>(_onAddProduct);
+    on<BulkAddProducts>(_onBulkAddProducts);
     on<UpdateProduct>(_onUpdateProduct);
     on<DeleteProduct>(_onDeleteProduct);
   }
@@ -80,6 +84,22 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         emit(state.copyWith(
             status: ProductStatus.success,
             message: 'Product deleted successfully'));
+        add(LoadProducts());
+      },
+    );
+  }
+
+  Future<void> _onBulkAddProducts(
+      BulkAddProducts event, Emitter<ProductState> emit) async {
+    emit(state.copyWith(status: ProductStatus.loading));
+    final result = await addProductsUseCase(event.products);
+    result.fold(
+      (failure) => emit(state.copyWith(
+          status: ProductStatus.error, message: failure.message)),
+      (_) {
+        emit(state.copyWith(
+            status: ProductStatus.success,
+            message: '${event.products.length} produits importés avec succès'));
         add(LoadProducts());
       },
     );

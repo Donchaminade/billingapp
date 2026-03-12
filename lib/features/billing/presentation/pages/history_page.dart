@@ -7,6 +7,8 @@ import '../../../shop/presentation/bloc/shop_bloc.dart';
 import '../bloc/history_bloc.dart';
 import 'package:billing_app/features/billing/domain/entities/sale.dart';
 import '../../../../core/utils/printer_helper.dart';
+import '../../../../core/utils/pdf_helper.dart';
+import '../../../../core/utils/whatsapp_helper.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -252,16 +254,27 @@ class _HistoryPageState extends State<HistoryPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Détails de la vente', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold)),
-                    Text('#${sale.id}', style: GoogleFonts.ibmPlexSans(fontSize: 10, color: Colors.grey)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Détails de la vente', style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                      Text('#${sale.id}', style: GoogleFonts.ibmPlexSans(fontSize: 10, color: Colors.grey), overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => _showWhatsappDialog(sale, currency),
+                      icon: const Icon(Icons.share_rounded, color: Colors.green),
+                      tooltip: 'Partager via WhatsApp',
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -333,7 +346,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _reprintReceipt(sale),
+                    onPressed: () => _reprintReceipt(sale, currency),
                     icon: const Icon(Icons.print_rounded),
                     label: const Text('Réimprimer'),
                     style: ElevatedButton.styleFrom(
@@ -374,7 +387,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  void _reprintReceipt(Sale sale) async {
+  void _reprintReceipt(Sale sale, String currency) async {
     final shopState = context.read<ShopBloc>().state;
     if (shopState is! ShopLoaded) return;
 
@@ -411,8 +424,137 @@ class _HistoryPageState extends State<HistoryPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur d\'impression : $e'), backgroundColor: Colors.red));
+        _showNoPrinterDialog(sale, currency);
       }
     }
+  }
+
+  void _showNoPrinterDialog(Sale sale, String currency) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            const Icon(Icons.print_disabled_rounded, color: Colors.orange),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Imprimante déconnectée')),
+          ],
+        ),
+        content: const Text(
+          'Voulez-vous générer une facture PDF et l\'envoyer par WhatsApp ?',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Annuler', style: TextStyle(color: Colors.grey[600])),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showWhatsappDialog(sale, currency);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Envoyer WhatsApp'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWhatsappDialog(Sale sale, String currency) {
+    final phoneController = TextEditingController();
+    final shopState = context.read<ShopBloc>().state;
+    
+    if (shopState is! ShopLoaded) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Envoi WhatsApp', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Entrez le numéro WhatsApp du client.', 
+                style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  hintText: 'Ex: 22890000000',
+                  prefixIcon: const Icon(Icons.phone_iphone_rounded, color: Colors.green),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+          ElevatedButton(
+            onPressed: () async {
+              final phone = phoneController.text.trim();
+              if (phone.isEmpty) return;
+              
+              Navigator.pop(ctx);
+              
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Génération du reçu PDF...'), duration: Duration(seconds: 1)),
+              );
+
+              try {
+                final items = sale.items.map((item) => {
+                  'name': item.productName,
+                  'qty': item.quantity,
+                  'price': item.price,
+                  'total': item.total,
+                }).toList();
+
+                final file = await PdfHelper.generateReceipt(
+                  shopName: shopState.shop.name,
+                  address1: shopState.shop.addressLine1,
+                  address2: shopState.shop.addressLine2,
+                  phone: shopState.shop.phoneNumber,
+                  items: items,
+                  total: sale.totalAmount,
+                  currency: currency,
+                  footer: shopState.shop.footerText,
+                  dateTime: sale.dateTime,
+                );
+
+                await WhatsappHelper.sendReceipt(
+                  pdfFile: file,
+                  phoneNumber: phone,
+                  shopName: shopState.shop.name,
+                );
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Envoyer le PDF'),
+          ),
+        ],
+      ),
+    );
   }
 }

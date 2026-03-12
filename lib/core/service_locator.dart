@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import '../../features/product/data/repositories/product_repository_impl.dart';
 import '../../features/product/domain/repositories/product_repository.dart';
 import '../../features/product/domain/usecases/product_usecases.dart';
+import '../../features/product/domain/usecases/add_products_use_case.dart';
 import '../../features/product/presentation/bloc/product_bloc.dart';
 import '../../features/shop/data/repositories/shop_repository_impl.dart';
 import '../../features/shop/domain/repositories/shop_repository.dart';
@@ -20,6 +21,7 @@ Future<void> init() async {
     () => ProductBloc(
       getProductsUseCase: sl(),
       addProductUseCase: sl(),
+      addProductsUseCase: sl(),
       updateProductUseCase: sl(),
       deleteProductUseCase: sl(),
     ),
@@ -41,6 +43,7 @@ Future<void> init() async {
   // Use cases
   sl.registerLazySingleton(() => GetProductsUseCase(sl()));
   sl.registerLazySingleton(() => AddProductUseCase(sl()));
+  sl.registerLazySingleton(() => AddProductsUseCase(sl()));
   sl.registerLazySingleton(() => UpdateProductUseCase(sl()));
   sl.registerLazySingleton(() => DeleteProductUseCase(sl()));
   sl.registerLazySingleton(() => GetProductByBarcodeUseCase(sl()));

@@ -16,6 +16,14 @@ class AddProduct extends ProductEvent {
   List<Object> get props => [product];
 }
 
+class BulkAddProducts extends ProductEvent {
+  final List<Product> products;
+  const BulkAddProducts(this.products);
+
+  @override
+  List<Object> get props => [products];
+}
+
 class UpdateProduct extends ProductEvent {
   final Product product;
   const UpdateProduct(this.product);

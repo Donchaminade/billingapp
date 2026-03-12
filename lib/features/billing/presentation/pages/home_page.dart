@@ -8,10 +8,41 @@ import '../bloc/billing_bloc.dart';
 import '../../../shop/presentation/bloc/shop_bloc.dart';
 import '../bloc/history_bloc.dart';
 import 'package:billing_app/features/billing/domain/entities/sale.dart';
+import 'package:billing_app/features/product/presentation/bloc/product_bloc.dart';
 import 'package:intl/intl.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  final PageController _pageController = PageController();
+  int _currentStatsPage = 0;
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,66 +112,154 @@ class HomePage extends StatelessWidget {
   Widget _buildStatsCard(BuildContext context) {
     return BlocBuilder<ShopBloc, ShopState>(
       builder: (context, shopState) {
-        String currency = 'FCFA ';
+        String currency = 'FCFA';
         if (shopState is ShopLoaded) {
           currency = shopState.shop.currency;
         }
-        return BlocBuilder<BillingBloc, BillingState>(
-          builder: (context, state) {
-            return Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Ventes du jour',
-                        style: GoogleFonts.ibmPlexSans(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+
+        return BlocBuilder<HistoryBloc, HistoryState>(
+          builder: (context, historyState) {
+            return BlocBuilder<ProductBloc, ProductState>(
+              builder: (context, productState) {
+                // CALCULS RÉELS
+                final now = DateTime.now();
+                final today = DateTime(now.year, now.month, now.day);
+                final sevenDaysAgo = today.subtract(const Duration(days: 7));
+
+                // 1. Ventes du jour
+                final salesToday = historyState.allSales.where((s) => s.dateTime.isAfter(today)).toList();
+                final totalToday = salesToday.fold(0.0, (sum, s) => sum + s.totalAmount);
+                final countToday = salesToday.length;
+
+                // 2. Performance Hebdomadaire
+                final salesWeek = historyState.allSales.where((s) => s.dateTime.isAfter(sevenDaysAgo)).toList();
+                final totalWeek = salesWeek.fold(0.0, (sum, s) => sum + s.totalAmount);
+
+                // 3. Valeur de l'Inventaire
+                final totalStockValue = productState.products.fold(0.0, (sum, p) => sum + (p.price * p.stock));
+                final totalProducts = productState.products.length;
+
+                // 4. Stock Bas
+                final lowStockCount = productState.products.where((p) => p.stock < 5).length;
+
+                return Column(
+                  children: [
+                    SizedBox(
+                      height: 180,
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) => setState(() => _currentStatsPage = index),
+                        children: [
+                          _buildStatSlide(
+                            'Ventes du jour',
+                            '$currency ${totalToday.toStringAsFixed(0)}',
+                            'Nombre de ventes: $countToday',
+                            Icons.today_rounded,
+                            AppTheme.primaryGradient,
+                          ),
+                          _buildStatSlide(
+                            'Performance Hebdo',
+                            '$currency ${totalWeek.toStringAsFixed(0)}',
+                            'Derniers 7 jours',
+                            Icons.bar_chart_rounded,
+                            const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFFA855F7)]),
+                          ),
+                          _buildStatSlide(
+                            'Valeur de l\'Inventaire',
+                            '$currency ${totalStockValue.toStringAsFixed(0)}',
+                            '$totalProducts produits en stock',
+                            Icons.inventory_2_rounded,
+                            const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF3B82F6)]),
+                          ),
+                          _buildStatSlide(
+                            'Alertes Stock Bas',
+                            '$lowStockCount Articles',
+                            'Nécessitent une recharge',
+                            Icons.warning_amber_rounded,
+                            const LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFEF4444)]),
+                          ),
+                        ],
                       ),
-                      const Icon(Icons.trending_up_rounded, color: Colors.white, size: 20),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$currency  ${state.totalAmount.toStringAsFixed(2)}',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      _buildMiniStat('Nombre d\'articles', '${state.cartItems.length}'),
-                      const SizedBox(width: 40),
-                      _buildMiniStat('Transactions', '0'),
-                    ],
-                  ),
-                ],
-              ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(4, (index) => _buildIndicator(index == _currentStatsPage)),
+                    ),
+                  ],
+                );
+              },
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildStatSlide(String title, String value, String subValue, IconData icon, Gradient gradient) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: (gradient as LinearGradient).colors.first.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.ibmPlexSans(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Icon(icon, color: Colors.white, size: 22),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            subValue,
+            style: GoogleFonts.ibmPlexSans(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIndicator(bool isActive) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      height: 8,
+      width: isActive ? 24 : 8,
+      decoration: BoxDecoration(
+        color: isActive ? AppTheme.primaryColor : Colors.grey[300],
+        borderRadius: BorderRadius.circular(4),
+      ),
     );
   }
 
@@ -180,12 +299,72 @@ class HomePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
+        // Bouton VENDRE Mis en évidence
+        AnimatedBuilder(
+          animation: _pulseAnimation,
+          builder: (context, child) {
+            return ScaleTransition(
+              scale: _pulseAnimation,
+              child: Container(
+                width: double.infinity,
+                height: 70,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryColor,
+                      AppTheme.primaryColor.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.4),
+                      blurRadius: 15,
+                      spreadRadius: _pulseController.value * 6,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: child,
+              ),
+            );
+          },
+          child: ElevatedButton.icon(
+            onPressed: () => context.push('/manual-sale'),
+            icon: const Icon(Icons.shopping_basket_rounded, size: 28),
+            label: Text(
+              'VENDRE MAINTENANT',
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        // Autres boutons en grille
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildActionItem(context, Icons.add_rounded, 'Nouveau Produit', AppTheme.primaryColor, '/products/add'),
-            _buildActionItem(context, Icons.qr_code_scanner_rounded, 'Vente Rapide', AppTheme.secondaryColor, '/scanner?mode=sale'),
-            _buildActionItem(context, Icons.receipt_long_rounded, 'Facture', AppTheme.accentColor, '/checkout'),
+            _buildActionItem(context, Icons.inventory_rounded, 'STOCK', AppTheme.secondaryColor, '/stock-movement'),
+            _buildActionItem(context, Icons.analytics_rounded, 'RAPPORT', AppTheme.accentColor, '/reports'),
+            _buildActionItem(context, Icons.add_rounded, 'PRODUIT', AppTheme.primaryColor, '/products/add'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildActionItem(context, Icons.qr_code_scanner_rounded, 'SCANNER', Colors.orange, '/scanner?mode=sale'),
+            _buildActionItem(context, Icons.receipt_long_rounded, 'FACTURE', Colors.teal, '/checkout'),
+            _buildActionItem(context, Icons.settings_rounded, 'RÉGLAGES', Colors.blueGrey, '/settings'),
           ],
         ),
       ],

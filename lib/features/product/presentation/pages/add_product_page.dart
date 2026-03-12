@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../bloc/product_bloc.dart';
 import '../../../shop/presentation/bloc/shop_bloc.dart';
 import '../../domain/entities/product.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_validators.dart';
+import '../../../../core/utils/data_transfer_helper.dart';
 
 class AddProductPage extends StatefulWidget {
   const AddProductPage({super.key});
@@ -23,6 +25,7 @@ class _AddProductPageState extends State<AddProductPage> {
   String _name = '';
   String _barcode = '';
   double _price = 0.0;
+  int _stock = 0;
 
   void _scanBarcode() async {
     final result = await context.push<String>('/scanner');
@@ -56,6 +59,7 @@ class _AddProductPageState extends State<AddProductPage> {
         name: _name,
         barcode: _barcode,
         price: _price,
+        stock: _stock,
       );
 
       context.read<ProductBloc>().add(AddProduct(product));
@@ -153,15 +157,101 @@ class _AddProductPageState extends State<AddProductPage> {
                       );
                     },
                   ),
+                  const SizedBox(height: 24),
+                  const InputLabel(text: 'Quantité en Stock'),
+                  TextFormField(
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      hintText: '0',
+                    ),
+                    initialValue: '0',
+                    validator: (value) => (value == null || value.isEmpty) ? 'Veuillez entrer une quantité' : null,
+                    onSaved: (value) => _stock = int.tryParse(value!) ?? 0,
+                  ),
+                  const SizedBox(height: 32),
+                  PrimaryButton(
+                    onPressed: _submit,
+                    icon: Icons.add_circle,
+                    label: 'Ajouter le Produit',
+                  ),
+                  const SizedBox(height: 48),
+                  Center(
+                    child: Column(
+                      children: [
+                        Text('OU IMPORTER UN FICHIER', 
+                          style: GoogleFonts.outfit(
+                            fontSize: 12, 
+                            fontWeight: FontWeight.bold, 
+                            color: Colors.grey[400],
+                            letterSpacing: 1.2,
+                          )),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _importButton(
+                              icon: Icons.table_view_rounded, 
+                              label: 'Excel', 
+                              color: Colors.green,
+                              onTap: () => _handleImport('excel'),
+                            ),
+                            const SizedBox(width: 12),
+                            _importButton(
+                              icon: Icons.article_rounded, 
+                              label: 'CSV', 
+                              color: Colors.orange,
+                              onTap: () => _handleImport('csv'),
+                            ),
+                            const SizedBox(width: 12),
+                            _importButton(
+                              icon: Icons.storage_rounded, 
+                              label: 'SQL', 
+                              color: Colors.purple,
+                              onTap: () => _handleImport('sql'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
-        bottomNavigationBar: PrimaryButton(
-          onPressed: _submit,
-          icon: Icons.add_circle,
-          label: 'Add Product',
-        ));
+      );
+  }
+
+  Widget _importButton({required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 75,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 10)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleImport(String type) async {
+    final products = await DataTransferHelper.importFromFiles();
+    if (products != null && products.isNotEmpty) {
+      if (mounted) {
+        context.read<ProductBloc>().add(BulkAddProducts(products));
+        context.pop();
+      }
+    }
   }
 }
