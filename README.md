@@ -1,76 +1,8 @@
-# Don Shop - Système de Facturation Intelligent 🚀
+# 🛒 Mobile POS & Billing App 
 
-**Don Shop** est une application Flutter moderne et robuste conçue pour simplifier la gestion des ventes, du stock et de la facturation pour les petites et moyennes entreprises. Alliant élégance (Mode Sombre, Design Premium) et performance, elle offre une expérience utilisateur fluide pour la gestion quotidienne d'une boutique.
+A feature-rich, high-performance offline-first billing and Point of Sale (POS) application built with Flutter. Designed for seamless retail checkout operations featuring barcode scanning, thermal Bluetooth printing, and robust local data persistence.
 
-## 🌟 Fonctionnalités Clés
-
-### 🛒 Ventes et Facturation
-- **Scanner de Code-barres** : Intégration de `mobile_scanner` pour une saisie ultra-rapide des articles.
-- **Vente Manuelle** : Possibilité d'ajouter des ventes sans code-barres.
-- **Panier Dynamique** : Gestion facile des quantités et calcul automatique du total.
-- **Checkout Complet** : Revue de commande détaillée avec génération de QR Code pour les paiements.
-
-### 📦 Gestion des Stocks
-- **Catalogue Produits** : Ajout, modification et suppression de produits avec gestion des prix et des stocks.
-- **Mouvement de Stock** : Suivi précis des entrées et sorties, avec possibilité de réapprovisionnement rapide.
-- **Alertes Stock Bas** : Indicateurs visuels et notifications pour ne jamais être en rupture de stock.
-- **Importation de Données** : Support des fichiers Excel et CSV pour importer massivement vos produits.
-
-### 📊 Rapports et Statistiques
-- **Tableau de Bord** : Vue d'ensemble des ventes du jour, du chiffre d'affaires et des articles populaires.
-- **Graphiques Interactifs** : Visualisation des performances via `fl_chart`.
-- **Historique des Ventes** : Journal détaillé de toutes les transactions passées.
-
-### ⚙️ Configuration et Matériel
-- **Personnalisation de la Boutique** : Configuration du nom, de l'adresse, du logo et des informations de contact.
-- **Impression Bluetooth** : Support des imprimantes thermiques pour l'impression instantanée des reçus.
-- **Partage WhatsApp** : Envoi direct des reçus au format PDF par message.
-- **Mode Sombre (Dark Mode)** : Interface totalement adaptée pour un confort visuel optimal de jour comme de nuit.
-- **Localisation** : Interface 100% en Français, adaptée spécifiquement au marché local (FCFA).
-
-## 🛠 Pile Technique
-
-- **Framework** : [Flutter](https://flutter.dev)
-- **Gestion d'État** : [flutter_bloc](https://pub.dev/packages/flutter_bloc) (Architecture BLoC)
-- **Base de Données Locale** : [Hive](https://pub.dev/packages/hive) (Rapide et persistant)
-- **Navigation** : [go_router](https://pub.dev/packages/go_router)
-- **Design** : [Google Fonts (Outfit, IBM Plex Sans)](https://fonts.google.com/)
-- **PDF & Impression** : `pdf`, `printing`, `print_bluetooth_thermal`
-- **Scanner** : `mobile_scanner`
-
-## 🏗 Architecture
-
-L'application suit une structure de **Clean Architecture** modulaire :
-- `lib/core` : Utilitaires, thèmes, widgets globaux et helpers.
-- `lib/features` : Découpage par fonctionnalités (Billing, Product, Shop, Settings).
-    - `data` : DTO, Data sources et implémentations des repositories.
-    - `domain` : Entités et cas d'utilisation (use cases).
-    - `presentation` : UI (Pages, Widgets) et logique d'état (BLoC).
-- `lib/config` : Routes et configurations globales.
-
-## 🚀 Installation
-
-1. **Cloner le projet** :
-   ```bash
-   git clone https://github.com/Donchaminade/billingapp.git
-   ```
-
-2. **Installer les dépendances** :
-   ```bash
-   flutter pub get
-   ```
-
-3. **Lancer la génération de code** (pour Hive et JSON) :
-   ```bash
-   flutter pub run build_runner build --delete-conflicting-outputs
-   ```
-
-4. **Exécuter l'application** :
-   ```bash
-   flutter run
-   ```
-
-## 📸 Aperçu de l'Application
+## 📸 Screenshots & Demo
 
 <div align="center">
   <img src="assets/screenshots/WhatsApp Image 2026-03-12 at 13.37.35.jpeg" width="30%" />
@@ -81,5 +13,75 @@ L'application suit une structure de **Clean Architecture** modulaire :
   <img src="assets/screenshots/WhatsApp Image 2026-03-12 at 13.37.36 (1).jpeg" width="30%" />
 </div>
 
+### Video Demo
+https://github.com/user-attachments/assets/f2d16454-5408-43b3-b207-cd843bbc2c9e
+
+## 🎯 Project Scope
+
+This application serves as a complete offline POS system for small to medium-sized retail shops. It streamlines the checkout process, catalog management, and receipt generation securely entirely on-device.
+
+### Core Features:
+- **Product Management System**: Complete CRUD operations for inventory items with barcode/QR code support.
+- **Smart Checkout System**: Rapid cart building via camera-based barcode scanning or manual entry, and robust order calculation functionality.
+- **Bluetooth Thermal Printing**: Direct integration with thermal printers (`print_bluetooth_thermal`) to instantly output physical receipts.
+- **Shop Settings & Customization**: Centrally managed shop details printed dynamically on receipts.
+- **Offline-First Architecture**: Powered by `Hive` for lightning-fast localized NoSQL data storage. No active internet connectivity required.
+- **Premium UI & Dark Mode**: Fully themed interface with smooth animations and professional aesthetics.
+
+## 🛠 Tech Stack & Architecture
+
+Built leveraging industry-standard architectural principles (Clean Architecture & Feature-Driven Design) ensuring scalability, separation of concerns, and robust testability. 
+
+- **Framework**: [Flutter](https://flutter.dev/) (SDK >=3.1.0)
+- **State Management**: `flutter_bloc`
+- **Dependency Injection**: `get_it`
+- **Routing**: `go_router`
+- **Local Database**: `hive` & `hive_flutter`
+- **Data Modeling**: `json_serializable`, `equatable`
+- **Hardware Integrations**: `mobile_scanner` (barcodes), `print_bluetooth_thermal`
+
+## 📁 File Structure
+
+The codebase is organized using a **Feature-First Clean Architecture** utilizing domain-driven concepts.
+
+```text
+lib/
+├── core/                       # Core application utilities and shared components
+│   ├── data/                   # Global data sources (e.g., Hive initialization)
+│   ├── theme/                  # UI aesthetics, typography, styling (Dark/Light mode)
+│   ├── utils/                  # Helpers (e.g., PrinterHelper, formatters)
+│   ├── widgets/                # Reusable global UI widgets
+│   └── service_locator.dart    # get_it dependency injection setup
+│
+└── features/                   # Independent feature modules
+    ├── billing/                # Core POS operations: Cart, Checkout
+    ├── product/                # Inventory management & Reports
+    ├── settings/               # App configuration & Printer
+    └── shop/                   # Shop details
+```
+
+## 🚀 Getting Started
+
+1. Clone the repository and fetch dependencies:
+   ```bash
+   git clone <repository_url>
+   flutter pub get
+   ```
+
+2. Run code generation:
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+
+3. Run the project:
+   ```bash
+   flutter run
+   ```
+
+## 🤝 Contributing Guidelines
+1. **Clean Architecture Rules**: Maintain strict boundaries between layers.
+2. **Immutable States**: Emit only immutable states from BLoCs utilizing `equatable`.
+3. **No Direct Exceptions**: Utilize `fpdart`'s `Either<Failure, Type>` pattern.
+
 ---
-Développé avec ❤️ pour simplifier le commerce.
+Developed with ❤️ by the Don Shop Team.
