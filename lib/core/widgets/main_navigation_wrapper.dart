@@ -55,8 +55,8 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 10,
-        color: Colors.white,
-        elevation: 20,
+        color: Theme.of(context).bottomAppBarTheme.color,
+        elevation: Theme.of(context).bottomAppBarTheme.elevation,
         child: SizedBox(
           height: 60,
           child: Row(
@@ -109,6 +109,9 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedColor = isDark ? Colors.white38 : Colors.grey[400];
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -122,7 +125,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
             children: [
               Icon(
                 icon,
-                color: isSelected ? AppTheme.primaryColor : Colors.grey[400],
+                color: isSelected ? AppTheme.primaryColor : unselectedColor,
                 size: 26,
               ),
               const SizedBox(height: 4),
@@ -131,7 +134,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppTheme.primaryColor : Colors.grey[400],
+                  color: isSelected ? AppTheme.primaryColor : unselectedColor,
                 ),
               ),
             ],

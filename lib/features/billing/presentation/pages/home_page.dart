@@ -1,3 +1,4 @@
+import '../../../settings/presentation/bloc/theme_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -58,7 +59,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -105,7 +105,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       floating: true,
       pinned: true,
       elevation: 0,
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         title: Row(
@@ -115,7 +115,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             Text(
               'Don Shop',
               style: GoogleFonts.outfit(
-                color: Colors.black,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
@@ -124,9 +124,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_none_rounded, color: Colors.black),
-          onPressed: () {},
+        BlocBuilder<ThemeBloc, ThemeState>(
+          builder: (context, state) {
+            return IconButton(
+              icon: Icon(
+                state.themeMode == ThemeMode.light 
+                  ? Icons.dark_mode_rounded 
+                  : Icons.light_mode_rounded,
+              ),
+              onPressed: () => context.read<ThemeBloc>().add(ToggleThemeEvent()),
+            );
+          },
         ),
         const SizedBox(width: 8),
       ],
@@ -470,7 +478,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             style: GoogleFonts.ibmPlexSans(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -503,11 +511,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildRecentSalesList(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       child: BlocBuilder<HistoryBloc, HistoryState>(
         builder: (context, state) {
@@ -598,7 +605,7 @@ class _LowStockAlertDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: AppTheme.backgroundColor,
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
       alignment: Alignment.center,
       child: child,

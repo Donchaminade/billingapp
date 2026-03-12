@@ -36,7 +36,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
         _handleBack(context);
       },
       child: Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
         appBar: AppBar(
           title: Text('Revue de commande', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
           centerTitle: true,
@@ -123,7 +122,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget _buildOrderCard(BillingState state, String currency) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -151,7 +150,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             },
             children: [
               TableRow(
-                decoration: BoxDecoration(color: AppTheme.backgroundColor.withValues(alpha: 0.5)),
+                decoration: BoxDecoration(color: Theme.of(context).dividerColor.withValues(alpha: 0.05)),
                 children: [
                   _headerCell('Produit'),
                   _headerCell('Qté'),
@@ -187,9 +186,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.1)),
+        border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -206,7 +205,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.backgroundColor,
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(24),
             ),
             child: SizedBox(
@@ -237,10 +236,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))],
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5))],
       ),
       child: SafeArea(
         child: Column(
@@ -381,8 +380,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Informations du client pour le reçu.', 
-                style: TextStyle(fontSize: 13, color: Colors.grey)),
+              Text('Informations du client pour le reçu.', 
+                style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor)),
               const SizedBox(height: 20),
               TextField(
                 controller: nameController,
@@ -392,7 +391,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   prefixIcon: const Icon(Icons.person_rounded, color: AppTheme.primaryColor),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                   filled: true,
-                  fillColor: Colors.grey[50],
+                  fillColor: Theme.of(context).cardColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -404,7 +403,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   prefixIcon: const Icon(Icons.phone_iphone_rounded, color: Colors.green),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                   filled: true,
-                  fillColor: Colors.grey[50],
+                  fillColor: Theme.of(context).cardColor,
                 ),
               ),
             ],

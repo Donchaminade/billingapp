@@ -123,10 +123,10 @@ class _EditProductPageState extends State<EditProductPage> {
                             const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
                           prefixText: '$currency ',
-                          prefixStyle: const TextStyle(
+                          prefixStyle: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black),
+                              color: Theme.of(context).colorScheme.onSurface),
                         ),
                         validator: AppValidators.price,
                         onSaved: (value) => _price = double.parse(value!),

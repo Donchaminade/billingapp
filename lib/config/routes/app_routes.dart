@@ -65,6 +65,10 @@ final router = GoRouter(
           path: '/shop',
           builder: (context, state) => const ShopDetailsPage(),
         ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsPage(),
+        ),
       ],
     ),
     GoRoute(
@@ -79,11 +83,6 @@ final router = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/checkout',
       builder: (context, state) => const CheckoutPage(),
-    ),
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-      path: '/settings',
-      builder: (context, state) => const SettingsPage(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
