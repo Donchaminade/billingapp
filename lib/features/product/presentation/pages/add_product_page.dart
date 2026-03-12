@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../bloc/product_bloc.dart';
+import '../../../shop/presentation/bloc/shop_bloc.dart';
 import '../../domain/entities/product.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_validators.dart';
@@ -130,19 +131,27 @@ class _AddProductPageState extends State<AddProductPage> {
                   ),
                   const SizedBox(height: 24),
                   const InputLabel(text: 'Price'),
-                  TextFormField(
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      hintText: '0.00',
-                      prefixText: '₹ ',
-                      prefixStyle: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black),
-                    ),
-                    validator: AppValidators.price,
-                    onSaved: (value) => _price = double.parse(value!),
+                  BlocBuilder<ShopBloc, ShopState>(
+                    builder: (context, shopState) {
+                      String currency = 'FCFA';
+                      if (shopState is ShopLoaded) {
+                        currency = shopState.shop.currency;
+                      }
+                      return TextFormField(
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          hintText: '0.00',
+                          prefixText: '$currency ',
+                          prefixStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black),
+                        ),
+                        validator: AppValidators.price,
+                        onSaved: (value) => _price = double.parse(value!),
+                      );
+                    },
                   ),
                 ],
               ),

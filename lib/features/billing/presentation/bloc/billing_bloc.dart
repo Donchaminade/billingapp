@@ -27,7 +27,7 @@ class BillingBloc extends Bloc<BillingEvent, BillingState> {
     final result = await getProductByBarcodeUseCase(event.barcode);
     result.fold(
       (failure) =>
-          emit(state.copyWith(error: 'Product not found: ${event.barcode}')),
+        emit(state.copyWith(error: 'Produit non trouvé : ${event.barcode}')),
       (product) {
         add(AddProductToCartEvent(product));
       },

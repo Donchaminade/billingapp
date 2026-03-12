@@ -1,5 +1,6 @@
 import 'package:billing_app/core/widgets/input_label.dart';
 import 'package:billing_app/core/widgets/primary_button.dart';
+import 'package:billing_app/core/widgets/app_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../domain/entities/shop.dart';
 import '../bloc/shop_bloc.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_validators.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ShopDetailsPage extends StatefulWidget {
   const ShopDetailsPage({super.key});
@@ -23,6 +25,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
   late TextEditingController _phoneController;
   late TextEditingController _upiController;
   late TextEditingController _footerController;
+  late TextEditingController _currencyController;
 
   @override
   void initState() {
@@ -33,6 +36,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
     _phoneController = TextEditingController();
     _upiController = TextEditingController();
     _footerController = TextEditingController();
+    _currencyController = TextEditingController(text: 'FCFA');
 
     // Load shop data
     context.read<ShopBloc>().add(LoadShopEvent());
@@ -46,6 +50,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
       _phoneController.text = shop.phoneNumber;
       _upiController.text = shop.upiId;
       _footerController.text = shop.footerText;
+      _currencyController.text = shop.currency;
     }
   }
 
@@ -57,6 +62,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
     _phoneController.dispose();
     _upiController.dispose();
     _footerController.dispose();
+    _currencyController.dispose();
     super.dispose();
   }
 
@@ -69,6 +75,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
         phoneNumber: _phoneController.text,
         upiId: _upiController.text,
         footerText: _footerController.text,
+        currency: _currencyController.text,
       );
 
       context.read<ShopBloc>().add(UpdateShopEvent(shop));
@@ -103,86 +110,169 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
             }
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+              padding: const EdgeInsets.symmetric(horizontal: 0),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('General Information',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: AppTheme.primaryColor.withValues(alpha: 0.8),
-                        )),
-                    const SizedBox(
-                      height: 5,
-                    ),
-                    Text(
-                      'These details will appear on your digital and printed receipts.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                    ),
-                    const SizedBox(height: 24),
-                    const InputLabel(text: 'Shop Name'),
-                    _buildTextField(
-                      controller: _nameController,
-                      hint: 'e.g. QuickMart Superstore',
-                      validator: AppValidators.required('Required'),
-                    ),
-                    const SizedBox(height: 15),
-                    const InputLabel(text: 'Address Line 1'),
-                    _buildTextField(
-                      controller: _address1Controller,
-                      hint: 'Samrajpet, Mecheri',
-                      validator: AppValidators.required('Required'),
-                    ),
-                    const SizedBox(height: 15),
-                    const InputLabel(text: 'Address Line 2 (Optional)'),
-                    _buildTextField(
-                      controller: _address2Controller,
-                      hint: 'Salem - 636453',
-                    ),
-                    const SizedBox(height: 15),
-                    const InputLabel(text: 'Phone Number'),
-                    _buildTextField(
-                      controller: _phoneController,
-                      hint: '+91 7010674588',
-                      keyboardType: TextInputType.phone,
-                      validator: AppValidators.required('Required'),
-                    ),
-                    const SizedBox(height: 15),
-                    const InputLabel(text: 'UPI ID'),
-                    _buildTextField(
-                      controller: _upiController,
-                      hint: 'dineshsowndar@oksbi',
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const InputLabel(text: 'Receipt Footer Text'),
-                        Text('Max 150 chars',
+                    // Premium Header with Logo
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppTheme.primaryColor.withValues(alpha: 0.1),
+                            AppTheme.backgroundColor,
+                          ],
+                        ),
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(32),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          const AppLogo(size: 80, showText: true),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Configure Your Store',
+                            style: GoogleFonts.outfit(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'These details will appear on your digital and printed receipts.',
                             style: TextStyle(
-                                fontSize: 11, color: Colors.grey[400])),
-                      ],
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
-                    _buildTextField(
-                      controller: _footerController,
-                      hint: 'Thank you, Visit again!!!',
-                      maxLines: 2,
-                      maxLength: 60,
+
+                    const SizedBox(height: 24),
+
+                    // Information Card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.storefront, 
+                                      color: AppTheme.primaryColor, size: 20),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'General Information',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            const InputLabel(text: 'Shop Name'),
+                            _buildTextField(
+                              controller: _nameController,
+                              hint: 'e.g. QuickMart Superstore',
+                              validator: AppValidators.required('Required'),
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            const InputLabel(text: 'Address Line 1'),
+                            _buildTextField(
+                              controller: _address1Controller,
+                              hint: 'Samrajpet, Mecheri',
+                              validator: AppValidators.required('Required'),
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            const InputLabel(text: 'Address Line 2 (Optional)'),
+                            _buildTextField(
+                              controller: _address2Controller,
+                              hint: 'Salem - 636453',
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            const InputLabel(text: 'Phone Number'),
+                            _buildTextField(
+                              controller: _phoneController,
+                              hint: '+91 7010674588',
+                              keyboardType: TextInputType.phone,
+                              validator: AppValidators.required('Required'),
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            const InputLabel(text: 'UPI ID'),
+                            _buildTextField(
+                              controller: _upiController,
+                              hint: 'dineshsowndar@oksbi',
+                            ),
+                            const SizedBox(height: 16),
+
+                            const InputLabel(text: 'Devise monétaire (ex: FCFA, €, \$)'),
+                            _buildTextField(
+                              controller: _currencyController,
+                              hint: 'FCFA',
+                              validator: AppValidators.required('Requis'),
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const InputLabel(text: 'Receipt Footer Text'),
+                                Text('Max 60 chars',
+                                    style: TextStyle(
+                                        fontSize: 11, color: Colors.grey[400])),
+                              ],
+                            ),
+                            _buildTextField(
+                              controller: _footerController,
+                              hint: 'Thank you, Visit again!!!',
+                              maxLines: 2,
+                              maxLength: 60,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                  ),
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
             );
           },
         ),
-        bottomNavigationBar: PrimaryButton(
-          onPressed: _saveShop,
-          icon: Icons.save,
-          label: 'Save Details',
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 24),
+          child: PrimaryButton(
+            onPressed: _saveShop,
+            icon: Icons.save,
+            label: 'Save Details',
+          ),
         ));
   }
 

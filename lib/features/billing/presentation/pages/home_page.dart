@@ -1,537 +1,333 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:vibration/vibration.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
-
-import '../../../billing/presentation/bloc/billing_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/primary_button.dart';
-import '../../domain/entities/cart_item.dart';
+import '../../../../core/widgets/app_logo.dart';
+import '../bloc/billing_bloc.dart';
+import '../../../shop/presentation/bloc/shop_bloc.dart';
+import '../bloc/history_bloc.dart';
+import 'package:billing_app/features/billing/domain/entities/sale.dart';
+import 'package:intl/intl.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  final MobileScannerController _scannerController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    returnImage: false,
-  );
-
-  bool _isCameraOn = true;
-  bool _isFlashOn = false;
-
-  // Cooldown mapping to prevent rapid firing of the same barcode
-  final Map<String, DateTime> _lastScanTimes = {};
-
-  @override
-  void dispose() {
-    _scannerController.dispose();
-    super.dispose();
-  }
-
-  void _onDetect(BarcodeCapture capture) async {
-    final List<Barcode> barcodes = capture.barcodes;
-    final now = DateTime.now();
-
-    for (final barcode in barcodes) {
-      if (barcode.rawValue != null) {
-        final rawValue = barcode.rawValue!;
-
-        // Cooldown logic: 2 seconds per identical barcode
-        if (_lastScanTimes.containsKey(rawValue)) {
-          final lastScan = _lastScanTimes[rawValue]!;
-          if (now.difference(lastScan).inSeconds < 2) {
-            continue;
-          }
-        }
-
-        _lastScanTimes[rawValue] = now;
-
-        // Vibrate
-        final hasVibrator = await Vibration.hasVibrator();
-        if (hasVibrator == true) {
-          Vibration.vibrate();
-        }
-
-        if (mounted) {
-          context.read<BillingBloc>().add(ScanBarcodeEvent(rawValue));
-        }
-        break; // Process one barcode at a time per frame
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocListener<BillingBloc, BillingState>(
-        listenWhen: (previous, current) =>
-            previous.error != current.error && current.error != null,
-        listener: (context, state) {
-          if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.error!),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
+      backgroundColor: AppTheme.backgroundColor,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          _buildAppBar(context),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatsCard(context),
+                  const SizedBox(height: 32),
+                  _buildQuickActions(context),
+                  const SizedBox(height: 32),
+                  _buildRecentSalesHeader(context),
+                  const SizedBox(height: 16),
+                  _buildRecentSalesList(context),
+                  const SizedBox(height: 100), // Space for bottom nav
+                ],
               ),
-            );
-          }
-        },
-        child: Stack(
-          children: [
-            // SCANNER VIEW (TOP 50%)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: MediaQuery.of(context).size.height * 0.4,
-              child: _buildScannerSection(),
             ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // BOTTOM PANEL (BOTTOM 50% + OVERLAP)
-            Positioned(
-              top: (MediaQuery.of(context).size.height * 0.4) - 24, // overlap
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildBottomPanel(),
+  Widget _buildAppBar(BuildContext context) {
+    return SliverAppBar(
+      expandedHeight: 100,
+      floating: true,
+      pinned: true,
+      elevation: 0,
+      backgroundColor: AppTheme.backgroundColor,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        title: Row(
+          children: [
+            const AppLogo(size: 32),
+            const SizedBox(width: 12),
+            Text(
+              'Don Shop',
+              style: GoogleFonts.outfit(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
             ),
           ],
         ),
       ),
-      bottomSheet:
-          BlocBuilder<BillingBloc, BillingState>(builder: (context, state) {
-        return PrimaryButton(
-          onPressed: state.cartItems.isEmpty
-              ? null
-              : () async {
-                  _scannerController.stop();
-                  await context.push('/checkout');
-                  if (_isCameraOn && mounted) _scannerController.start();
-                },
-          icon: Icons.payment,
-          label: 'Review Order',
-        );
-      }),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_none_rounded, color: Colors.black),
+          onPressed: () {},
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 
-  Widget _buildScannerSection() {
-    return Container(
-      color: Colors.black,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: _onDetect,
-          ),
-          if (!_isCameraOn) _buildCameraOffState(),
-
-          // Overlay Actions (Top Right)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            right: 16,
-            child: Column(
-              children: [
-                _buildOverlayButton(
-                  icon: Icons.settings,
-                  onPressed: () async {
-                    _scannerController.stop();
-                    await context.push('/settings');
-                    if (_isCameraOn && mounted) _scannerController.start();
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (_isCameraOn)
-                  _buildOverlayButton(
-                    icon:
-                        _isFlashOn ? Icons.flashlight_off : Icons.flashlight_on,
-                    onPressed: () {
-                      setState(() => _isFlashOn = !_isFlashOn);
-                      _scannerController.toggleTorch();
-                    },
+  Widget _buildStatsCard(BuildContext context) {
+    return BlocBuilder<ShopBloc, ShopState>(
+      builder: (context, shopState) {
+        String currency = 'FCFA ';
+        if (shopState is ShopLoaded) {
+          currency = shopState.shop.currency;
+        }
+        return BlocBuilder<BillingBloc, BillingState>(
+          builder: (context, state) {
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
-                if (_isCameraOn) const SizedBox(height: 16),
-                _buildOverlayButton(
-                  icon: _isCameraOn ? Icons.videocam : Icons.videocam_off,
-                  // color:  Colors.white24 ,
-                  onPressed: () {
-                    setState(() {
-                      _isCameraOn = !_isCameraOn;
-                    });
-                    if (_isCameraOn) {
-                      _scannerController.start();
-                    } else {
-                      _scannerController.stop();
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Central Overlay Bounding Box
-          if (_isCameraOn)
-            Center(
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white24, width: 2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Stack(
-                  children: [
-                    // Corners
-                    _buildCorner(Alignment.topLeft),
-                    _buildCorner(Alignment.topRight),
-                    _buildCorner(Alignment.bottomLeft),
-                    _buildCorner(Alignment.bottomRight),
-                  ],
-                ),
+                ],
               ),
-            ),
-        ],
-      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Ventes du jour',
+                        style: GoogleFonts.ibmPlexSans(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Icon(Icons.trending_up_rounded, color: Colors.white, size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$currency  ${state.totalAmount.toStringAsFixed(2)}',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      _buildMiniStat('Nombre d\'articles', '${state.cartItems.length}'),
+                      const SizedBox(width: 40),
+                      _buildMiniStat('Transactions', '0'),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildCameraOffState() {
-    return Container(
-      color: const Color(0xFF1E293B), // slate-800
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
-              color: Color(0xFF334155), // slate-700
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child:
-                const Icon(Icons.videocam_off, color: Colors.white, size: 32),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Camera is turned off',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'Turn on your camera to start scanning barcodes and items automatically.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            icon: const Icon(Icons.videocam),
-            label: const Text('Turn on Camera',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            onPressed: () {
-              setState(() => _isCameraOn = true);
-              _scannerController.start();
-            },
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverlayButton(
-      {required IconData icon, required VoidCallback onPressed, Color? color}) {
-    return Container(
-      width: 44,
-      height: 44,
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: color ?? Colors.black45,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white24),
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
-  Widget _buildCorner(Alignment alignment) {
-    return Align(
-      alignment: alignment,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          border: Border(
-            top: (alignment == Alignment.topLeft ||
-                    alignment == Alignment.topRight)
-                ? const BorderSide(color: Colors.greenAccent, width: 4)
-                : BorderSide.none,
-            bottom: (alignment == Alignment.bottomLeft ||
-                    alignment == Alignment.bottomRight)
-                ? const BorderSide(color: Colors.greenAccent, width: 4)
-                : BorderSide.none,
-            left: (alignment == Alignment.topLeft ||
-                    alignment == Alignment.bottomLeft)
-                ? const BorderSide(color: Colors.greenAccent, width: 4)
-                : BorderSide.none,
-            right: (alignment == Alignment.topRight ||
-                    alignment == Alignment.bottomRight)
-                ? const BorderSide(color: Colors.greenAccent, width: 4)
-                : BorderSide.none,
+  Widget _buildMiniStat(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.ibmPlexSans(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 11,
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Actions rapides',
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildActionItem(context, Icons.add_rounded, 'Nouveau Produit', AppTheme.primaryColor, '/products/add'),
+            _buildActionItem(context, Icons.qr_code_scanner_rounded, 'Vente Rapide', AppTheme.secondaryColor, '/scanner?mode=sale'),
+            _buildActionItem(context, Icons.receipt_long_rounded, 'Facture', AppTheme.accentColor, '/checkout'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionItem(BuildContext context, IconData icon, String label, Color color, String route) {
+    return InkWell(
+      onTap: () => context.push(route),
+      borderRadius: BorderRadius.circular(20),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.ibmPlexSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildBottomPanel() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: const [
-          BoxShadow(
-              color: Colors.black26, blurRadius: 15, offset: Offset(0, -5))
-        ],
-      ),
-      child: Column(
-        children: [
-          // Drag handle indicator
-          Container(
-            width: 48,
-            height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
+  Widget _buildRecentSalesHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Ventes récentes',
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
+        ),
+        TextButton(
+          onPressed: () => context.push('/history'),
+          child: Text(
+            'Voir tout',
+            style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
 
-          // Header
-          BlocBuilder<BillingBloc, BillingState>(
-            builder: (context, state) {
-              final totalItems =
-                  state.cartItems.fold<int>(0, (sum, i) => sum + i.quantity);
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildRecentSalesList(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+      ),
+      child: BlocBuilder<HistoryBloc, HistoryState>(
+        builder: (context, state) {
+          if (state.allSales.isEmpty) {
+            return _buildEmptySalesState();
+          }
+
+          final recentSales = state.allSales.take(5).toList();
+
+          return Column(
+            children: recentSales.map((sale) => _buildRecentSaleItem(context, sale)).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRecentSaleItem(BuildContext context, Sale sale) {
+    return BlocBuilder<ShopBloc, ShopState>(
+      builder: (context, shopState) {
+        String currency = 'FCFA';
+        if (shopState is ShopLoaded) {
+          currency = shopState.shop.currency;
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.receipt_rounded, color: AppTheme.primaryColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Scanned Items',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w600)),
-                        Text('$totalItems items total',
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey)),
-                      ],
+                    Text(
+                      'Vente #${sale.id.substring(0, 5)}',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('TOTAL PRICE',
-                            style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey,
-                                letterSpacing: 1.2)),
-                        Text(
-                          '₹${state.totalAmount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: Theme.of(context).primaryColor),
-                        ),
-                      ],
+                    Text(
+                      DateFormat('dd MMM, HH:mm').format(sale.dateTime),
+                      style: GoogleFonts.ibmPlexSans(color: Colors.grey, fontSize: 11),
                     ),
                   ],
                 ),
-              );
-            },
-          ),
-          const Divider(height: 1),
-
-          // List View
-          Expanded(
-            child: Stack(children: [
-              BlocBuilder<BillingBloc, BillingState>(
-                builder: (context, state) {
-                  if (state.cartItems.isEmpty) {
-                    return _buildEmptyCart();
-                  }
-
-                  return ListView.separated(
-                    padding: const EdgeInsets.only(
-                        left: 15, right: 15, top: 16, bottom: 100),
-                    itemCount: state.cartItems.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = state.cartItems[index];
-                      return _buildCartItemCard(context, item);
-                    },
-                  );
-                },
               ),
-            ]),
+              Text(
+                '$currency ${sale.totalAmount.toStringAsFixed(0)}',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryColor),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildEmptyCart() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child:
-                Icon(Icons.shopping_basket, size: 40, color: Colors.grey[300]),
-          ),
-          const SizedBox(height: 16),
-          const Text('List is empty',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              'Scanned items will appear here as you scan them with the camera above.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildEmptySalesState() {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        Icon(Icons.receipt_rounded, size: 48, color: Colors.grey[200]),
+        const SizedBox(height: 12),
+        Text(
+          'Aucune vente encore',
+          style: GoogleFonts.ibmPlexSans(color: Colors.grey[400], fontSize: 13),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
-
-  Widget _buildCartItemCard(
-    BuildContext context,
-    CartItem item,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        spacing: 1,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.product.name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '₹${item.product.price.toStringAsFixed(2)}',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _circularIconButton(
-                    icon: Icons.remove,
-                    onPressed: () {
-                      if (item.quantity > 1) {
-                        context.read<BillingBloc>().add(UpdateQuantityEvent(
-                            item.product.id, item.quantity - 1));
-                      } else {
-                        context
-                            .read<BillingBloc>()
-                            .add(RemoveProductFromCartEvent(item.product.id));
-                      }
-                    }),
-                SizedBox(
-                  width: 32,
-                  child: Text(
-                    '${item.quantity}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                _circularIconButton(
-                    icon: Icons.add,
-                    onPressed: () {
-                      context.read<BillingBloc>().add(UpdateQuantityEvent(
-                          item.product.id, item.quantity + 1));
-                    }),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _circularIconButton(
-      {required IconData icon, required VoidCallback onPressed}) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Icon(icon, size: 20, color: Colors.grey[600]),
-      ),
-    );
-  }
-
-  // A floating Details/Checkout Button at the very bottom
-  // Added a Stack wrapper below to overlay this button
 }

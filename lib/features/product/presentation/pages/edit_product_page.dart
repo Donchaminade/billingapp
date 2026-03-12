@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../bloc/product_bloc.dart';
+import '../../../shop/presentation/bloc/shop_bloc.dart';
 import '../../domain/entities/product.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_validators.dart';
@@ -115,19 +116,27 @@ class _EditProductPageState extends State<EditProductPage> {
 
                   const InputLabel(text: 'Price'),
 
-                  TextFormField(
-                    initialValue: _price.toStringAsFixed(2),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      prefixText: '₹ ',
-                      prefixStyle: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black),
-                    ),
-                    validator: AppValidators.price,
-                    onSaved: (value) => _price = double.parse(value!),
+                  BlocBuilder<ShopBloc, ShopState>(
+                    builder: (context, shopState) {
+                      String currency = 'FCFA';
+                      if (shopState is ShopLoaded) {
+                        currency = shopState.shop.currency;
+                      }
+                      return TextFormField(
+                        initialValue: _price.toStringAsFixed(2),
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          prefixText: '$currency ',
+                          prefixStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black),
+                        ),
+                        validator: AppValidators.price,
+                        onSaved: (value) => _price = double.parse(value!),
+                      );
+                    },
                   ),
                 ],
               ),

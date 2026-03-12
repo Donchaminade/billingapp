@@ -9,51 +9,78 @@ import '../../features/billing/presentation/pages/scanner_page.dart';
 import '../../features/billing/presentation/pages/checkout_page.dart';
 import '../../features/product/domain/entities/product.dart';
 
+import '../../features/billing/presentation/pages/history_page.dart';
+import '../../core/widgets/main_navigation_wrapper.dart';
+import 'package:flutter/material.dart';
+
+import '../../core/widgets/splash_screen.dart';
+
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
+
 final router = GoRouter(
-  initialLocation: '/',
+  navigatorKey: _rootNavigatorKey,
+  initialLocation: '/splash',
   routes: [
     GoRoute(
-      path: '/',
-      builder: (context, state) => const HomePage(),
+      path: '/splash',
+      builder: (context, state) => const SplashScreen(),
+    ),
+    ShellRoute(
+      navigatorKey: _shellNavigatorKey,
+      builder: (context, state, child) => MainNavigationWrapper(child: child),
       routes: [
         GoRoute(
-          path: 'scanner',
-          builder: (context, state) => const ScannerPage(),
+          path: '/',
+          builder: (context, state) => const HomePage(),
         ),
         GoRoute(
-          path: 'checkout',
-          builder: (context, state) => const CheckoutPage(),
+          path: '/products',
+          builder: (context, state) => const ProductListPage(),
+          routes: [
+            GoRoute(
+              path: 'add',
+              builder: (context, state) => const AddProductPage(),
+            ),
+            GoRoute(
+              path: 'edit/:id',
+              builder: (context, state) {
+                final product = state.extra as Product?;
+                if (product == null) {
+                  return const ProductListPage();
+                }
+                return EditProductPage(product: product);
+              },
+            ),
+          ],
+        ),
+        GoRoute(
+          path: '/history',
+          builder: (context, state) => const HistoryPage(),
+        ),
+        GoRoute(
+          path: '/shop',
+          builder: (context, state) => const ShopDetailsPage(),
         ),
       ],
     ),
     GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/scanner',
+      builder: (context, state) {
+        final isSaleMode = state.uri.queryParameters['mode'] == 'sale';
+        return ScannerPage(isSaleMode: isSaleMode);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/checkout',
+      builder: (context, state) => const CheckoutPage(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
       path: '/settings',
       builder: (context, state) => const SettingsPage(),
-    ),
-    GoRoute(
-      path: '/products',
-      builder: (context, state) => const ProductListPage(),
-      routes: [
-        GoRoute(
-          path: 'add',
-          builder: (context, state) => const AddProductPage(),
-        ),
-        GoRoute(
-          path: 'edit/:id',
-          builder: (context, state) {
-            final product = state.extra as Product?;
-            if (product == null) {
-              // If we land here without extra (e.g. deep link), go back to products for now.
-              return const ProductListPage();
-            }
-            return EditProductPage(product: product);
-          },
-        ),
-      ],
-    ),
-    GoRoute(
-      path: '/shop',
-      builder: (context, state) => const ShopDetailsPage(),
     ),
   ],
 );

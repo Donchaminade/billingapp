@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../shop/presentation/bloc/shop_bloc.dart';
 import '../bloc/billing_bloc.dart';
+import '../bloc/history_bloc.dart';
+import 'package:billing_app/features/billing/domain/entities/sale.dart';
+import '../../../../core/theme/app_theme.dart';
+import 'package:uuid/uuid.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -17,271 +22,274 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   @override
   Widget build(BuildContext context) {
-    const borderColor = Color(0xFFE5E5EA);
-
     return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (bool didPop, dynamic result) {
-          if (didPop) return;
-          context.read<BillingBloc>().add(ClearCartEvent());
-          context.go('/');
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Checkout',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.chevron_left,
-                  size: 28, color: Theme.of(context).primaryColor),
-              onPressed: () {
-                context.read<BillingBloc>().add(ClearCartEvent());
-                context.go('/');
-              },
-            ),
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        _handleBack(context);
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: AppBar(
+          title: Text('Revue de commande', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            onPressed: () => _handleBack(context),
           ),
-          body: BlocConsumer<BillingBloc, BillingState>(
-            listener: (context, state) {
-              if (state.printSuccess) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Printed successfully'),
-                    backgroundColor: Colors.green));
-                // context.read<BillingBloc>().add(ClearCartEvent());
-                // context.go('/');
-              }
-            },
-            builder: (context, billingState) {
-              return BlocBuilder<ShopBloc, ShopState>(
-                  builder: (context, shopState) {
+        ),
+        body: BlocConsumer<BillingBloc, BillingState>(
+          listener: (context, state) {
+            if (state.printSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Reçu imprimé avec succès !'),
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+          builder: (context, billingState) {
+            return BlocBuilder<ShopBloc, ShopState>(
+              builder: (context, shopState) {
                 String upiId = '';
-                String shopName = 'Shop';
+                String shopName = 'Ma Boutique';
+                String currency = ' FCFA';
 
                 if (shopState is ShopLoaded) {
                   upiId = shopState.shop.upiId;
                   shopName = shopState.shop.name;
+                  currency = shopState.shop.currency;
                 }
 
                 return Column(
                   children: [
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 16),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Table
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: borderColor),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Table(
-                                  border: const TableBorder(
-                                    horizontalInside:
-                                        BorderSide(color: borderColor),
-                                    bottom: BorderSide(color: borderColor),
-                                  ),
-                                  children: [
-                                    // Header row
-                                    TableRow(
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFFF8FAFC),
-                                        border: Border(
-                                            bottom:
-                                                BorderSide(color: borderColor)),
-                                      ),
-                                      children: [
-                                        _buildHeaderCell(
-                                            'Product Name', TextAlign.left),
-                                        _buildHeaderCell(
-                                            'Price', TextAlign.right),
-                                        _buildHeaderCell(
-                                            'Total', TextAlign.right),
-                                      ],
-                                    ),
-                                    // Items rows
-                                    ...billingState.cartItems.map((item) {
-                                      return TableRow(
-                                        children: [
-                                          _buildDataCell(
-                                            '${item.quantity} x ${item.product.name}',
-                                            TextAlign.left,
-                                          ),
-                                          _buildDataCell(
-                                              '₹${item.product.price.toStringAsFixed(2)}',
-                                              TextAlign.right,
-                                              isSubtitle: true),
-                                          _buildDataCell(
-                                              '₹${item.total.toStringAsFixed(2)}',
-                                              TextAlign.right,
-                                              isBold: true),
-                                        ],
-                                      );
-                                    }),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            _buildOrderCard(billingState, currency),
                             const SizedBox(height: 24),
-
-                            const SizedBox(
-                                height: 120), // padding for bottom fixed bar
+                            if (upiId.isNotEmpty) _buildPaymentQR(upiId, shopName, billingState.totalAmount),
+                            const SizedBox(height: 100),
                           ],
                         ),
                       ),
                     ),
-
-                    // Bottom Bar
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        borderRadius: const BorderRadius.horizontal(
-                            left: Radius.circular(24),
-                            right: Radius.circular(24)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, -4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                            ),
-                            child: Column(
-                              children: [
-                                const SizedBox(
-                                  height: 8,
-                                ),
-                                upiId.isNotEmpty
-                                    ? Column(
-                                        children: [
-                                          const Text(
-                                            'Scan to Pay',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black87,
-                                              letterSpacing: 1.1,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          SizedBox(
-                                            width: 180,
-                                            height: 180,
-                                            child: PrettyQrView.data(
-                                              data:
-                                                  'upi://pay?pa=$upiId&pn=$shopName&am=${billingState.totalAmount.toStringAsFixed(2)}&cu=INR',
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : const SizedBox.shrink(),
-                                const SizedBox(height: 15),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'GRAND TOTAL',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey[400],
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                    Text(
-                                      '₹${billingState.totalAmount.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: -0.5,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          PrimaryButton(
-                            onPressed: () {
-                              if (shopState is ShopLoaded) {
-                                context.read<BillingBloc>().add(
-                                    PrintReceiptEvent(
-                                        shopName: shopState.shop.name,
-                                        address1: shopState.shop.addressLine1,
-                                        address2: shopState.shop.addressLine2,
-                                        phone: shopState.shop.phoneNumber,
-                                        footer: shopState.shop.footerText));
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                            Text('Shop details not loaded'),
-                                        backgroundColor: Colors.red));
-                              }
-                            },
-                            label: 'Print Receipt',
-                            icon: Icons.print,
-                            isLoading: billingState.isPrinting,
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildBottomBar(context, billingState, shopState),
                   ],
                 );
-              });
-            },
-          ),
-        ));
-  }
-
-  Widget _buildHeaderCell(String text, TextAlign align) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      child: Text(
-        text.toUpperCase(),
-        textAlign: align,
-        style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1,
-          color: Colors.grey,
+              },
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildDataCell(String text, TextAlign align,
-      {bool isBold = false, bool isSubtitle = false}) {
+  void _handleBack(BuildContext context) {
+     // On ne vide pas forcément le panier ici si on veut juste revenir au scan
+     context.pop();
+  }
+
+  Widget _buildOrderCard(BillingState state, String currency) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              'Articles',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Table(
+            columnWidths: const {
+              0: FlexColumnWidth(3),
+              1: FlexColumnWidth(1),
+              2: FlexColumnWidth(1.5),
+            },
+            children: [
+              TableRow(
+                decoration: BoxDecoration(color: AppTheme.backgroundColor.withValues(alpha: 0.5)),
+                children: [
+                  _headerCell('Produit'),
+                  _headerCell('Qté'),
+                  _headerCell('Total'),
+                ],
+              ),
+              ...state.cartItems.map((item) => TableRow(
+                children: [
+                  _dataCell(item.product.name),
+                  _dataCell('x${item.quantity}', align: TextAlign.center),
+                  _dataCell('$currency${item.total.toStringAsFixed(0)}', align: TextAlign.right, isBold: true),
+                ],
+              )),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Sous-total', style: GoogleFonts.ibmPlexSans(color: Colors.grey)),
+                Text('$currency${state.totalAmount.toStringAsFixed(2)}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 20)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentQR(String upiId, String shopName, double amount) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Scanner pour payer',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Paiement UPI (No Cash)',
+            style: GoogleFonts.ibmPlexSans(color: Colors.grey, fontSize: 12),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundColor,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: SizedBox(
+              width: 180,
+              height: 180,
+              child: PrettyQrView.data(
+                data: 'upi://pay?pa=$upiId&pn=$shopName&am=${amount.toStringAsFixed(2)}&cu=INR',
+                decoration: PrettyQrDecoration(
+                  image: PrettyQrDecorationImage(
+                    image: AssetImage('assets/icons/logo.png'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(upiId, style: GoogleFonts.ibmPlexSans(fontSize: 10, color: Colors.grey[400])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context, BillingState billingState, ShopState shopState) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))],
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PrimaryButton(
+              onPressed: () {
+                if (shopState is ShopLoaded) {
+                  context.read<BillingBloc>().add(
+                    PrintReceiptEvent(
+                      shopName: shopState.shop.name,
+                      address1: shopState.shop.addressLine1,
+                      address2: shopState.shop.addressLine2,
+                      phone: shopState.shop.phoneNumber,
+                      footer: shopState.shop.footerText,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Détails de la boutique non chargés'), backgroundColor: Colors.red),
+                  );
+                }
+              },
+              label: 'Imprimer le Reçu',
+              icon: Icons.print_rounded,
+              isLoading: billingState.isPrinting,
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () {
+                _saveToHistory(context, billingState);
+                context.read<BillingBloc>().add(ClearCartEvent());
+                context.go('/');
+              },
+              child: Text(
+                'Nouvelle Vente',
+                style: GoogleFonts.outfit(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveToHistory(BuildContext context, BillingState state) {
+    if (state.cartItems.isEmpty) return;
+
+    final sale = Sale(
+      id: Uuid().v4(),
+      dateTime: DateTime.now(),
+      items: state.cartItems.map((item) => SaleItem(
+        productName: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price,
+        total: item.total,
+      )).toList(),
+      totalAmount: state.totalAmount,
+    );
+
+    context.read<HistoryBloc>().add(AddSaleToHistoryEvent(sale));
+  }
+
+  Widget _headerCell(String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      padding: const EdgeInsets.all(12),
+      child: Text(text, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey[600])),
+    );
+  }
+
+  Widget _dataCell(String text, {TextAlign align = TextAlign.left, bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
       child: Text(
         text,
         textAlign: align,
-        style: TextStyle(
-          fontSize: isSubtitle ? 12 : 14,
+        style: GoogleFonts.ibmPlexSans(
           fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-          color: isSubtitle ? Colors.grey[500] : Colors.black87,
+          fontSize: 14,
         ),
       ),
     );
