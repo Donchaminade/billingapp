@@ -93,7 +93,10 @@ final router = GoRouter(
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/stock-movement',
-      builder: (context, state) => const StockMovementPage(),
+      builder: (context, state) {
+        final filter = state.uri.queryParameters['filter'];
+        return StockMovementPage(showLowStockOnly: filter == 'low');
+      },
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

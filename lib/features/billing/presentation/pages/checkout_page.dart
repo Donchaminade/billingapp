@@ -366,6 +366,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   void _showWhatsappDialog(BuildContext context) {
     final phoneController = TextEditingController();
+    final nameController = TextEditingController();
     final shopState = context.read<ShopBloc>().state;
     final billingState = context.read<BillingBloc>().state;
     
@@ -380,14 +381,26 @@ class _CheckoutPageState extends State<CheckoutPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Entrez le numéro WhatsApp du client pour envoyer le reçu PDF.', 
+              const Text('Informations du client pour le reçu.', 
                 style: TextStyle(fontSize: 13, color: Colors.grey)),
               const SizedBox(height: 20),
+              TextField(
+                controller: nameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  hintText: 'Nom du client (Optionnel)',
+                  prefixIcon: const Icon(Icons.person_rounded, color: AppTheme.primaryColor),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
-                  hintText: 'Ex: 22890000000',
+                  hintText: 'Numéro WhatsApp (Ex: 228...)',
                   prefixIcon: const Icon(Icons.phone_iphone_rounded, color: Colors.green),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                   filled: true,
@@ -402,6 +415,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ElevatedButton(
             onPressed: () async {
               final phone = phoneController.text.trim();
+              final name = nameController.text.trim();
               if (phone.isEmpty) return;
               
               Navigator.pop(ctx);
@@ -435,6 +449,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   pdfFile: file,
                   phoneNumber: phone,
                   shopName: shopState.shop.name,
+                  clientName: name,
                 );
 
                 if (!_isSaleSaved) {

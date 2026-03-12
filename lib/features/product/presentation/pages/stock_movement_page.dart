@@ -6,7 +6,8 @@ import 'package:billing_app/features/product/domain/entities/product.dart';
 import 'package:billing_app/core/theme/app_theme.dart';
 
 class StockMovementPage extends StatefulWidget {
-  const StockMovementPage({super.key});
+  final bool showLowStockOnly;
+  const StockMovementPage({super.key, this.showLowStockOnly = false});
 
   @override
   State<StockMovementPage> createState() => _StockMovementPageState();
@@ -15,6 +16,13 @@ class StockMovementPage extends StatefulWidget {
 class _StockMovementPageState extends State<StockMovementPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  late bool _showOnlyLowStock;
+
+  @override
+  void initState() {
+    super.initState();
+    _showOnlyLowStock = widget.showLowStockOnly;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,21 +34,42 @@ class _StockMovementPageState extends State<StockMovementPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextFormField(
-              controller: _searchController,
-              onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
-              decoration: const InputDecoration(
-                hintText: 'Rechercher un produit...',
-                prefixIcon: Icon(Icons.inventory_2_rounded),
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+                    decoration: const InputDecoration(
+                      hintText: 'Rechercher un produit...',
+                      prefixIcon: Icon(Icons.inventory_2_rounded),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Stock Bas'),
+                  selected: _showOnlyLowStock,
+                  onSelected: (v) => setState(() => _showOnlyLowStock = v),
+                  selectedColor: Colors.red[100],
+                  checkmarkColor: Colors.red,
+                  labelStyle: TextStyle(
+                    color: _showOnlyLowStock ? Colors.red : Colors.black87,
+                    fontWeight: _showOnlyLowStock ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
             child: BlocBuilder<ProductBloc, ProductState>(
               builder: (context, state) {
-                final filtered = state.products.where((p) => 
-                  p.name.toLowerCase().contains(_searchQuery) || p.barcode.contains(_searchQuery)).toList();
+                final filtered = state.products.where((p) {
+                  final matchesSearch = p.name.toLowerCase().contains(_searchQuery) || p.barcode.contains(_searchQuery);
+                  final matchesStock = !_showOnlyLowStock || p.stock < 5;
+                  return matchesSearch && matchesStock;
+                }).toList();
 
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),

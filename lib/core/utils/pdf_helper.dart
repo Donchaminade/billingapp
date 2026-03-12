@@ -127,12 +127,18 @@ class PdfHelper {
             headerAlignment: pw.Alignment.centerLeft,
             headers: ['ID', 'Produit', 'Prix Unit.', 'Stock', 'Valeur'],
             data: products.map((p) {
+              final id = p.id.toString();
+              final displayId = id.length > 5 ? id.substring(0, 5) : id;
+              final price = p.price?.toDouble() ?? 0.0;
+              final stock = p.stock?.toInt() ?? 0;
+              final name = p.name ?? 'Inconnu';
+              
               return [
-                p.id.substring(0, 5),
-                p.name,
-                '${p.price.toStringAsFixed(0)} $currency',
-                '${p.stock}',
-                '${(p.price * p.stock).toStringAsFixed(0)} $currency',
+                displayId,
+                name,
+                '${price.toStringAsFixed(0)} $currency',
+                '$stock',
+                '${(price * stock).toStringAsFixed(0)} $currency',
               ];
             }).toList(),
           ),

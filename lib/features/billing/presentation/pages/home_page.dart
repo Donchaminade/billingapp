@@ -18,9 +18,11 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  late AnimationController _alertController;
+  late Animation<double> _alertAnimation;
 
   @override
   void initState() {
@@ -32,6 +34,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    _alertController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    )..repeat(reverse: true);
+    _alertAnimation = Tween<double>(begin: -3.0, end: 3.0).animate(
+      CurvedAnimation(parent: _alertController, curve: Curves.easeInOut),
+    );
   }
 
   final PageController _pageController = PageController();
@@ -40,6 +50,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _pulseController.dispose();
+    _alertController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -52,9 +63,22 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         physics: const BouncingScrollPhysics(),
         slivers: [
           _buildAppBar(context),
+          BlocBuilder<ProductBloc, ProductState>(
+            builder: (context, state) {
+              final lowStockCount = state.products.where((p) => p.stock < 5).length;
+              if (lowStockCount == 0) return const SliverToBoxAdapter(child: SizedBox.shrink());
+              return SliverPersistentHeader(
+                pinned: true,
+                delegate: _LowStockAlertDelegate(
+                  height: 80,
+                  child: _buildLowStockAlert(context),
+                ),
+              );
+            },
+          ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -106,6 +130,60 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ),
         const SizedBox(width: 8),
       ],
+    );
+  }
+
+  Widget _buildLowStockAlert(BuildContext context) {
+    return BlocBuilder<ProductBloc, ProductState>(
+      builder: (context, state) {
+        final lowStockCount = state.products.where((p) => p.stock < 5).length;
+        if (lowStockCount == 0) return const SizedBox.shrink();
+
+        return AnimatedBuilder(
+          animation: _alertAnimation,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(_alertAnimation.value, 0),
+              child: InkWell(
+                onTap: () => context.push('/stock-movement?filter=low'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.red[600],
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '$lowStockCount produits ont un stock très bas !',
+                          style: GoogleFonts.ibmPlexSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -508,5 +586,33 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         const SizedBox(height: 20),
       ],
     );
+  }
+}
+
+class _LowStockAlertDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+
+  _LowStockAlertDelegate({required this.child, required this.height});
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: AppTheme.backgroundColor,
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  bool shouldRebuild(covariant _LowStockAlertDelegate oldDelegate) {
+    return oldDelegate.child != child || oldDelegate.height != height;
   }
 }

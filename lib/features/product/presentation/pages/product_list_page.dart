@@ -136,14 +136,12 @@ class _ProductListPageState extends State<ProductListPage> {
                               controller: _searchController,
                               textCapitalization: TextCapitalization.words,
                               decoration: InputDecoration(
-                                hintText: 'Scan or enter barcode',
+                                hintText: 'Nom ou code-barres',
                                 prefixIcon: Icon(
                                   Icons.search,
                                   color: Colors.grey[400],
                                 ),
                               ),
-                              validator:
-                                  AppValidators.required('Please enter a barcode'),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -162,7 +160,7 @@ class _ProductListPageState extends State<ProductListPage> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text('Tap the icon to open camera scanner',
+                      const Text('Appuyez sur l\'icône pour ouvrir le scanner',
                           style: TextStyle(fontSize: 12, color: Color(0xFF4C669A))),
                     ],
                   );
@@ -199,7 +197,7 @@ class _ProductListPageState extends State<ProductListPage> {
                         return Center(child: Text('Error: ${state.message}'));
                       }
                       return const Center(
-                          child: Text('No products found. Add some!'));
+                          child: Text('Aucun produit trouvé. Ajoutez-en !'));
                     }
 
                     final filteredProducts = state.products
@@ -210,7 +208,7 @@ class _ProductListPageState extends State<ProductListPage> {
 
                     if (filteredProducts.isEmpty) {
                       return const Center(
-                          child: Text('No products match your search.'));
+                          child: Text('Aucun produit ne correspond à votre recherche.'));
                     }
 
                     return ListView.separated(
@@ -353,19 +351,19 @@ class _ProductListPageState extends State<ProductListPage> {
       context: context,
       builder: (innerContext) {
         return AlertDialog(
-          title: const Text('Delete Product'),
-          content: Text('Are you sure you want to delete ${product.name}?'),
+          title: const Text('Supprimer le Produit'),
+          content: Text('Êtes-vous sûr de vouloir supprimer ${product.name} ?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(innerContext),
-              child: const Text('Cancel'),
+              child: const Text('Annuler'),
             ),
             TextButton(
               onPressed: () {
                 context.read<ProductBloc>().add(DeleteProduct(product.id));
                 Navigator.pop(innerContext);
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -426,7 +424,7 @@ class _ProductListPageState extends State<ProductListPage> {
                 children: [
                   _detailRow(Icons.label_outline_rounded, 'Nom', product.name),
                   const SizedBox(height: 16),
-                  _detailRow(Icons.qr_code_2_rounded, 'Code Barre', product.barcode),
+                  _detailRow(Icons.qr_code_2_rounded, 'Code Barre', product.barcode.isEmpty ? '(Aucun)' : product.barcode),
                   const SizedBox(height: 16),
                   _detailRow(Icons.payments_outlined, 'Prix', '$currency${product.price.toStringAsFixed(2)}'),
                   const SizedBox(height: 16),

@@ -104,10 +104,15 @@ class DataTransferHelper {
         var row = sheet.rows[i];
         if (row.length < 5) continue;
 
+        String barcode = row[2]?.value?.toString() ?? '';
+        if (barcode.endsWith('.0')) {
+          barcode = barcode.substring(0, barcode.length - 2);
+        }
+
         products.add(Product(
           id: row[0]?.value?.toString() ?? const Uuid().v4(),
           name: row[1]?.value?.toString() ?? 'Produit sans nom',
-          barcode: row[2]?.value?.toString() ?? '',
+          barcode: barcode,
           price: double.tryParse(row[3]?.value?.toString() ?? '0') ?? 0,
           stock: int.tryParse(row[4]?.value?.toString() ?? '0') ?? 0,
         ));

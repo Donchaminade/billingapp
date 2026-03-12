@@ -21,6 +21,7 @@ class EditProductPage extends StatefulWidget {
 class _EditProductPageState extends State<EditProductPage> {
   final _formKey = GlobalKey<FormState>();
   late String _name;
+  late String _barcode;
   late double _price;
   late int _stock;
 
@@ -28,6 +29,7 @@ class _EditProductPageState extends State<EditProductPage> {
   void initState() {
     super.initState();
     _name = widget.product.name;
+    _barcode = widget.product.barcode;
     _price = widget.product.price;
     _stock = widget.product.stock;
   }
@@ -36,10 +38,26 @@ class _EditProductPageState extends State<EditProductPage> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
+      // Uniqueness check for barcode (only if not empty and changed)
+      if (_barcode.isNotEmpty && _barcode != widget.product.barcode) {
+        final productState = context.read<ProductBloc>().state;
+        final existingProduct = productState.products.where((p) => p.barcode == _barcode && p.id != widget.product.id).firstOrNull;
+
+        if (existingProduct != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Un produit avec le code-barres "$_barcode" existe déjà !'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
       final updatedProduct = Product(
         id: widget.product.id,
         name: _name,
-        barcode: widget.product.barcode,
+        barcode: _barcode,
         price: _price,
         stock: _stock,
       );
@@ -59,7 +77,7 @@ class _EditProductPageState extends State<EditProductPage> {
                 size: 32, color: Theme.of(context).primaryColor),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Edit Product',
+          title: const Text('Modifier le Produit',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           centerTitle: true,
         ),
@@ -71,53 +89,27 @@ class _EditProductPageState extends State<EditProductPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Display Barcode details (immutable block)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.1)),
+                  const InputLabel(text: 'Code-barres (Optionnel)'),
+                  TextFormField(
+                    initialValue: _barcode,
+                    decoration: const InputDecoration(
+                      hintText: 'Scanner ou saisir le code-barres',
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.qr_code_scanner,
-                            color: AppTheme.primaryColor, size: 28),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('BARCODE',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryColor
-                                        .withValues(alpha: 0.7))),
-                            const SizedBox(height: 2),
-                            Text(widget.product.barcode,
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'monospace')),
-                          ],
-                        ),
-                      ],
-                    ),
+                    onSaved: (value) => _barcode = value ?? '',
                   ),
+                  const SizedBox(height: 24),
 
-                  const InputLabel(text: 'Product Name'),
+                  const InputLabel(text: 'Nom du Produit'),
 
                   TextFormField(
                     initialValue: _name,
                     textCapitalization: TextCapitalization.words,
-                    validator: AppValidators.required('Please enter a name'),
+                    validator: AppValidators.required('Veuillez entrer un nom'),
                     onSaved: (value) => _name = value!,
                   ),
                   const SizedBox(height: 24),
 
-                  const InputLabel(text: 'Price'),
+                  const InputLabel(text: 'Prix'),
 
                   BlocBuilder<ShopBloc, ShopState>(
                     builder: (context, shopState) {
@@ -126,7 +118,7 @@ class _EditProductPageState extends State<EditProductPage> {
                         currency = shopState.shop.currency;
                       }
                       return TextFormField(
-                        initialValue: _price.toStringAsFixed(2),
+                        initialValue: _price.toStringAsFixed(0),
                         keyboardType:
                             const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(

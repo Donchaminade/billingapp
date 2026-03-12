@@ -7,12 +7,14 @@ class WhatsappHelper {
     required File pdfFile,
     required String phoneNumber,
     required String shopName,
+    String? clientName,
   }) async {
     // Nettoyage du numéro de téléphone (garder seulement les chiffres)
     final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
     
-    // Message de remerciement
-    final message = "Merci de votre achat chez $shopName ! Voici votre reçu en pièce jointe. À bientôt !";
+    // Message de remerciement personnalisé
+    final greeting = clientName != null && clientName.isNotEmpty ? "Bonjour $clientName ! " : "Bonjour ! ";
+    final message = "${greeting}Merci de votre achat chez $shopName ! Voici votre reçu en pièce jointe. À bientôt !";
     
     // Sur mobile, on utilise share_plus pour envoyer le fichier. 
     // WhatsApp permet de recevoir des fichiers via le partage système.

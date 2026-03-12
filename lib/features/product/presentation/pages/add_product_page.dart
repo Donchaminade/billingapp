@@ -41,17 +41,19 @@ class _AddProductPageState extends State<AddProductPage> {
       _formKey.currentState!.save();
 
       final productState = context.read<ProductBloc>().state;
-      final existingProduct =
-          productState.products.where((p) => p.barcode == _barcode).firstOrNull;
+      if (_barcode.isNotEmpty) {
+        final existingProduct =
+            productState.products.where((p) => p.barcode == _barcode).firstOrNull;
 
-      if (existingProduct != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Product with barcode "$_barcode" already exists!'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
+        if (existingProduct != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Un produit avec le code-barres "$_barcode" existe déjà !'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
       }
 
       final product = Product(
@@ -78,7 +80,7 @@ class _AddProductPageState extends State<AddProductPage> {
                 size: 28, color: Theme.of(context).primaryColor),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Add Product',
+          title: const Text('Ajouter un Produit',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           centerTitle: true,
         ),
@@ -90,7 +92,7 @@ class _AddProductPageState extends State<AddProductPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const InputLabel(text: 'Barcode'),
+                  const InputLabel(text: 'Code-barres (Optionnel)'),
                   Row(
                     children: [
                       Expanded(
@@ -98,11 +100,9 @@ class _AddProductPageState extends State<AddProductPage> {
                           key: ValueKey(_barcode),
                           initialValue: _barcode,
                           decoration: const InputDecoration(
-                            hintText: 'Scan or enter barcode',
+                            hintText: 'Scanner ou saisir le code-barres',
                           ),
-                          validator:
-                              AppValidators.required('Please enter a barcode'),
-                          onSaved: (value) => _barcode = value!,
+                          onSaved: (value) => _barcode = value ?? '',
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -121,20 +121,20 @@ class _AddProductPageState extends State<AddProductPage> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const Text('Tap the icon to open camera scanner',
+                  const Text('Appuyez sur l\'icône pour ouvrir le scanner',
                       style: TextStyle(fontSize: 12, color: Color(0xFF4C669A))),
                   const SizedBox(height: 24),
-                  const InputLabel(text: 'Product Name'),
+                  const InputLabel(text: 'Nom du Produit'),
                   TextFormField(
                     decoration: const InputDecoration(
-                      hintText: 'e.g. Basmati Rice',
+                      hintText: 'ex: Riz Basmati',
                     ),
                     textCapitalization: TextCapitalization.words,
-                    validator: AppValidators.required('Please enter a name'),
+                    validator: AppValidators.required('Veuillez entrer un nom'),
                     onSaved: (value) => _name = value!,
                   ),
                   const SizedBox(height: 24),
-                  const InputLabel(text: 'Price'),
+                  const InputLabel(text: 'Prix'),
                   BlocBuilder<ShopBloc, ShopState>(
                     builder: (context, shopState) {
                       String currency = 'FCFA';
