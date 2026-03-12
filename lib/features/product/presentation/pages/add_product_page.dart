@@ -122,7 +122,7 @@ class _AddProductPageState extends State<AddProductPage> {
                   ),
                   const SizedBox(height: 6),
                   const Text('Appuyez sur l\'icône pour ouvrir le scanner',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF4C669A))),
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
                   const SizedBox(height: 24),
                   const InputLabel(text: 'Nom du Produit'),
                   TextFormField(
@@ -147,10 +147,10 @@ class _AddProductPageState extends State<AddProductPage> {
                         decoration: InputDecoration(
                           hintText: '0.00',
                           prefixText: '$currency ',
-                          prefixStyle: const TextStyle(
+                          prefixStyle: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black),
+                              color: Theme.of(context).colorScheme.onSurface),
                         ),
                         validator: AppValidators.price,
                         onSaved: (value) => _price = double.parse(value!),
@@ -181,8 +181,7 @@ class _AddProductPageState extends State<AddProductPage> {
                         Text('OU IMPORTER UN FICHIER', 
                           style: GoogleFonts.outfit(
                             fontSize: 12, 
-                            fontWeight: FontWeight.bold, 
-                            color: Colors.grey[400],
+                            fontWeight: FontWeight.bold,                             color: Theme.of(context).hintColor,
                             letterSpacing: 1.2,
                           )),
                         const SizedBox(height: 20),

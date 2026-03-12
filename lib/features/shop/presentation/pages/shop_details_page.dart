@@ -125,7 +125,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                           end: Alignment.bottomCenter,
                           colors: [
                             AppTheme.primaryColor.withValues(alpha: 0.1),
-                            AppTheme.backgroundColor,
+                            Theme.of(context).scaffoldBackgroundColor,
                           ],
                         ),
                         borderRadius: const BorderRadius.vertical(
@@ -141,7 +141,7 @@ class _ShopDetailsPageState extends State<ShopDetailsPage> {
                             style: GoogleFonts.outfit(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             textAlign: TextAlign.center,
                           ),

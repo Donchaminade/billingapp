@@ -1,3 +1,4 @@
+import 'package:billing_app/features/settings/presentation/bloc/theme_bloc.dart';
 import 'package:get_it/get_it.dart';
 import '../../features/product/data/repositories/product_repository_impl.dart';
 import '../../features/product/domain/repositories/product_repository.dart';
@@ -33,6 +34,8 @@ Future<void> init() async {
       updateShopUseCase: sl(),
     ),
   );
+
+  sl.registerFactory(() => ThemeBloc());
 
   sl.registerFactory(
     () => PrinterBloc(

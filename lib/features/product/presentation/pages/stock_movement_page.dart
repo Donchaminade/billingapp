@@ -52,10 +52,10 @@ class _StockMovementPageState extends State<StockMovementPage> {
                   label: const Text('Stock Bas'),
                   selected: _showOnlyLowStock,
                   onSelected: (v) => setState(() => _showOnlyLowStock = v),
-                  selectedColor: Colors.red[100],
+                  selectedColor: Colors.red.withValues(alpha: 0.2),
                   checkmarkColor: Colors.red,
                   labelStyle: TextStyle(
-                    color: _showOnlyLowStock ? Colors.red : Colors.black87,
+                    color: _showOnlyLowStock ? Colors.red : Theme.of(context).colorScheme.onSurface,
                     fontWeight: _showOnlyLowStock ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -91,13 +91,13 @@ class _StockMovementPageState extends State<StockMovementPage> {
   Widget _buildProductStockCard(BuildContext context, Product product) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       child: ListTile(
         title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('Stock actuel: ${product.stock}', style: TextStyle(color: product.stock < 5 ? Colors.red : Colors.grey)),
+        subtitle: Text('Stock actuel: ${product.stock}', style: TextStyle(color: product.stock < 5 ? Colors.red : Theme.of(context).hintColor)),
         trailing: ElevatedButton(
           onPressed: () => _showAddStockDialog(context, product),
           style: ElevatedButton.styleFrom(

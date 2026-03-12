@@ -35,7 +35,6 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -82,13 +81,12 @@ class _HistoryPageState extends State<HistoryPage> {
       floating: true,
       pinned: true,
       elevation: 0,
-      backgroundColor: AppTheme.backgroundColor,
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         title: Text(
           'Historique',
           style: GoogleFonts.outfit(
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
@@ -102,7 +100,7 @@ class _HistoryPageState extends State<HistoryPage> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -119,7 +117,7 @@ class _HistoryPageState extends State<HistoryPage> {
           },
           decoration: InputDecoration(
             hintText: 'Rechercher un produit ou ID...',
-            hintStyle: GoogleFonts.ibmPlexSans(color: Colors.grey[400], fontSize: 14),
+            hintStyle: GoogleFonts.ibmPlexSans(color: Theme.of(context).hintColor, fontSize: 14),
             prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.primaryColor),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -140,9 +138,9 @@ class _HistoryPageState extends State<HistoryPage> {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.03)),
+            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.02),
@@ -214,7 +212,7 @@ class _HistoryPageState extends State<HistoryPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history_rounded, size: 80, color: Colors.grey[200]),
+          Icon(Icons.history_rounded, size: 80, color: Theme.of(context).dividerColor.withOpacity(0.1)),
           const SizedBox(height: 16),
           Text(
             'Aucun historique trouvé',
@@ -237,9 +235,9 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget _buildDetailsSheet(Sale sale, String currency) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
         children: [
@@ -247,7 +245,7 @@ class _HistoryPageState extends State<HistoryPage> {
           Container(
             width: 40,
             height: 4,
-            decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+            decoration: BoxDecoration(color: Theme.of(context).dividerColor.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
           ),
           Padding(
             padding: const EdgeInsets.all(24),
@@ -494,7 +492,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   prefixIcon: const Icon(Icons.person_rounded, color: AppTheme.primaryColor),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                   filled: true,
-                  fillColor: Colors.grey[50],
+                  fillColor: Theme.of(context).cardColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -506,7 +504,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   prefixIcon: const Icon(Icons.phone_iphone_rounded, color: Colors.green),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
                   filled: true,
-                  fillColor: Colors.grey[50],
+                  fillColor: Theme.of(context).cardColor,
                 ),
               ),
             ],

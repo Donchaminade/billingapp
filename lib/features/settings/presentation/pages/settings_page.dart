@@ -28,7 +28,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings',
+        title: const Text('Réglages',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -45,7 +45,7 @@ class _SettingsPageState extends State<SettingsPage> {
             // Profile Section
             Container(
               width: double.infinity,
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
               child: BlocBuilder<ShopBloc, ShopState>(
                 builder: (context, state) {
@@ -98,20 +98,20 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 24),
 
             // Management Section
-            _buildSectionHeader('Management'),
+            _buildSectionHeader('Gestion'),
             _buildListGroup(
               children: [
                 _buildListItem(
                   icon: Icons.qr_code_scanner,
-                  title: 'Products',
-                  subtitle: 'Manage stock and barcodes',
+                  title: 'Produits',
+                  subtitle: 'Gérer le stock et les codes-barres',
                   onTap: () => context.push('/products'),
                 ),
                 _buildDivider(),
                 _buildListItem(
                   icon: Icons.storefront,
-                  title: 'Shop Details',
-                  subtitle: 'Edit business info & address',
+                  title: 'Détails de la Boutique',
+                  subtitle: 'Modifier les infos et l\'adresse',
                   onTap: () => context.push('/shop'),
                 ),
               ],
@@ -119,8 +119,57 @@ class _SettingsPageState extends State<SettingsPage> {
 
             const SizedBox(height: 24),
 
+            // Preferences Section
+            _buildSectionHeader('Préférences'),
+            _buildListGroup(
+              children: [
+                _buildListItem(
+                  icon: Icons.language_rounded,
+                  title: 'Langue',
+                  subtitle: 'Français (Cameroun)',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Langue changée avec succès !'))
+                    );
+                  },
+                ),
+                _buildDivider(),
+                _buildListItem(
+                  icon: Icons.notifications_active_rounded,
+                  title: 'Notifications',
+                  subtitle: 'Alertes de stock et ventes',
+                  trailingWidget: Switch(
+                    value: true,
+                    onChanged: (v) {},
+                    activeColor: AppTheme.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Data Section
+            _buildSectionHeader('Données'),
+            _buildListGroup(
+              children: [
+                _buildListItem(
+                  icon: Icons.backup_rounded,
+                  title: 'Sauvegarde & Restauration',
+                  subtitle: 'Exporter ou importer vos données',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Fonctionnalité de sauvegarde bientôt disponible !'))
+                    );
+                  },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
             // Hardware Section
-            _buildSectionHeader('Hardware'),
+            _buildSectionHeader('Matériel'),
             BlocConsumer<PrinterBloc, PrinterState>(
               listener: (context, state) {
                 if (state.errorMessage != null) {
@@ -138,13 +187,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     _buildListItem(
                       icon: Icons.print,
-                      title: 'Print Device',
+                      title: 'Imprimante',
                       subtitleWidget: Row(
                         children: [
                           Text(
                             state.connectedMac != null
-                                ? (state.connectedName ?? 'Printer connected')
-                                : 'No printer connected',
+                                ? (state.connectedName ?? 'Imprimante connectée')
+                                : 'Aucune imprimante connectée',
                             style: TextStyle(
                                 fontSize: 12, color: Colors.grey[500]),
                           ),
@@ -154,15 +203,15 @@ class _SettingsPageState extends State<SettingsPage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                  color: Colors.teal[100],
+                                  color: Colors.teal.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: Colors.teal[200]!)),
-                              child: Text(
-                                'CONNECTED',
+                                  border: Border.all(color: Colors.teal.withValues(alpha: 0.2))),
+                              child: const Text(
+                                'CONNECTÉ',
                                 style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.teal[700]),
+                                    color: Colors.teal),
                               ),
                             ),
                           ]
@@ -205,7 +254,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: Text(
-                "To connect a new device, tap on the Settings gear to pair in phone's Bluetooth settings, then return and hit Refresh.",
+                "Pour connecter un nouvel appareil, appuyez sur l'icône de réglage pour l'appairer dans les paramètres Bluetooth de votre téléphone, puis revenez et appuyez sur Rafraîchir.",
                 style: TextStyle(
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
@@ -241,16 +290,16 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       child: Column(children: children),
     );
   }
 
   Widget _buildDivider() {
-    return Divider(height: 1, thickness: 1, color: Colors.grey[50], indent: 64);
+    return Divider(height: 1, thickness: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.1), indent: 64);
   }
 
   Widget _buildListItem({

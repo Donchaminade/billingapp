@@ -9,6 +9,7 @@ import 'features/product/presentation/bloc/product_bloc.dart';
 import 'features/shop/presentation/bloc/shop_bloc.dart';
 import 'features/settings/presentation/bloc/printer_bloc.dart';
 import 'features/settings/presentation/bloc/printer_event.dart';
+import 'features/settings/presentation/bloc/theme_bloc.dart';
 import 'features/billing/presentation/bloc/history_bloc.dart';
 
 void main() async {
@@ -36,12 +37,20 @@ class MyApp extends StatelessWidget {
             create: (context) => di.sl<PrinterBloc>()..add(InitPrinterEvent())),
         BlocProvider<HistoryBloc>(
             create: (context) => HistoryBloc()..add(LoadHistoryEvent())),
+        BlocProvider<ThemeBloc>(
+            create: (context) => di.sl<ThemeBloc>()..add(LoadThemeEvent())),
       ],
-      child: MaterialApp.router(
-        title: 'Don Shop',
-        theme: AppTheme.lightTheme,
-        routerConfig: router,
-        debugShowCheckedModeBanner: false,
+      child: BlocBuilder<ThemeBloc, ThemeState>(
+        builder: (context, state) {
+          return MaterialApp.router(
+            title: 'Don Shop',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: state.themeMode,
+            routerConfig: router,
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

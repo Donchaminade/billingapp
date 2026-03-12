@@ -28,11 +28,11 @@ class ReportsPage extends StatelessWidget {
             children: [
               _buildSectionTitle('Évolution des Ventes (7j)'),
               const SizedBox(height: 16),
-              _buildSalesEvolutionChart(historyState),
+              _buildSalesEvolutionChart(context, historyState),
               const SizedBox(height: 32),
               _buildSectionTitle('Répartition de l\'Inventaire'),
               const SizedBox(height: 16),
-              _buildInventoryChart(productState),
+              _buildInventoryChart(context, productState),
               const SizedBox(height: 32),
               _buildSectionTitle('Performance par Produit'),
               const SizedBox(height: 16),
@@ -40,7 +40,7 @@ class ReportsPage extends StatelessWidget {
               const SizedBox(height: 32),
               _buildSectionTitle('Statistiques Globales'),
               const SizedBox(height: 16),
-              _buildSummaryCards(productState),
+              _buildSummaryCards(context, productState),
               const SizedBox(height: 32),
               _buildSectionTitle('Actions'),
               const SizedBox(height: 16),
@@ -60,7 +60,7 @@ class ReportsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSalesEvolutionChart(HistoryState state) {
+  Widget _buildSalesEvolutionChart(BuildContext context, HistoryState state) {
     if (state.allSales.isEmpty) return const Center(child: Text('Aucune vente enregistrée'));
 
     final salesByDay = <DateTime, double>{};
@@ -86,9 +86,9 @@ class ReportsPage extends StatelessWidget {
       height: 200,
       padding: const EdgeInsets.fromLTRB(10, 20, 20, 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       child: LineChart(
         LineChartData(
@@ -127,7 +127,7 @@ class ReportsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInventoryChart(ProductState state) {
+  Widget _buildInventoryChart(BuildContext context, ProductState state) {
     if (state.products.isEmpty) return const Center(child: Text('Aucune donnée'));
 
     final sortedProducts = List.from(state.products)..sort((a, b) => b.stock.compareTo(a.stock));
@@ -137,9 +137,9 @@ class ReportsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -187,15 +187,15 @@ class ReportsPage extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.1)),
       ),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: productState.products.length,
-        separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey[100]),
+        separatorBuilder: (context, index) => Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
         itemBuilder: (context, index) {
           final product = productState.products[index];
           final productSales = historyState.allSales.where((sale) => 
@@ -221,10 +221,10 @@ class ReportsPage extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
+        decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,7 +343,7 @@ class ReportsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCards(ProductState productState) {
+  Widget _buildSummaryCards(BuildContext context, ProductState productState) {
     final totalStock = productState.products.fold(0, (sum, p) => sum + p.stock);
     final totalValue = productState.products.fold(0.0, (sum, p) => sum + (p.price * p.stock));
 

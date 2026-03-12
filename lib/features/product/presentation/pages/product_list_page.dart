@@ -51,7 +51,7 @@ class _ProductListPageState extends State<ProductListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = Colors.grey[100]!;
+    final borderColor = Theme.of(context).dividerColor.withOpacity(0.1);
 
     return Scaffold(
       appBar: AppBar(
@@ -139,7 +139,7 @@ class _ProductListPageState extends State<ProductListPage> {
                                 hintText: 'Nom ou code-barres',
                                 prefixIcon: Icon(
                                   Icons.search,
-                                  color: Colors.grey[400],
+                                  color: Theme.of(context).hintColor,
                                 ),
                               ),
                             ),
@@ -161,7 +161,7 @@ class _ProductListPageState extends State<ProductListPage> {
                       ),
                       const SizedBox(height: 6),
                       const Text('Appuyez sur l\'icône pour ouvrir le scanner',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF4C669A))),
+                          style: TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   );
                 }),
@@ -221,14 +221,14 @@ class _ProductListPageState extends State<ProductListPage> {
                         final product = filteredProducts[index];
                         return Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).cardColor,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: borderColor),
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
-                                  color: Colors.black12,
+                                  color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 4,
-                                  offset: Offset(0, 2))
+                                  offset: const Offset(0, 2))
                             ],
                           ),
                           child: InkWell(
@@ -254,7 +254,7 @@ class _ProductListPageState extends State<ProductListPage> {
                                           '$currency${product.price.toStringAsFixed(2)}',
                                           style: TextStyle(
                                               fontWeight: FontWeight.w500,
-                                              color: Colors.grey[600]),
+                                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                                         ),
                                         const SizedBox(height: 4),
                                         Container(
@@ -274,7 +274,7 @@ class _ProductListPageState extends State<ProductListPage> {
                                               fontWeight: FontWeight.bold,
                                               color: (product.stock < 5)
                                                   ? Colors.red
-                                                  : Colors.green[700],
+                                                  : Colors.green,
                                             ),
                                           ),
                                         ),
@@ -480,11 +480,11 @@ class _ProductListPageState extends State<ProductListPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+              Text(label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.w500)),
               Text(value, style: TextStyle(
                 fontSize: 15, 
                 fontWeight: FontWeight.bold,
-                color: valueColor ?? Colors.black87,
+                color: valueColor ?? Theme.of(context).colorScheme.onSurface,
               )),
             ],
           ),
