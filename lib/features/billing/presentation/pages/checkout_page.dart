@@ -65,6 +65,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   behavior: SnackBarBehavior.floating,
                 ),
               );
+              // Redirection vers l'historique
+              Future.delayed(const Duration(seconds: 1), () {
+                if (context.mounted) {
+                  context.read<BillingBloc>().add(ClearCartEvent());
+                  context.go('/history');
+                }
+              });
             }
           },
           builder: (context, billingState) {
@@ -108,8 +115,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   void _handleBack(BuildContext context) {
-     // On ne vide pas forcément le panier ici si on veut juste revenir au scan
-     context.pop();
+     // Retour à l'accueil et vidage du panier
+     context.read<BillingBloc>().add(ClearCartEvent());
+     context.go('/');
   }
 
   Widget _buildOrderCard(BillingState state, String currency) {
@@ -431,6 +439,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                 if (!_isSaleSaved) {
                   _saveToHistory(context, billingState);
+                }
+
+                // Redirection vers l'historique après envoi
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Reçu envoyé via WhatsApp !'), backgroundColor: Colors.green),
+                  );
+                  context.read<BillingBloc>().add(ClearCartEvent());
+                  context.go('/history');
                 }
               } catch (e) {
                 if (context.mounted) {
